@@ -26,4 +26,4 @@ exploit: main.c shellcode.bin.h shellcode.addr.h
 
 .PHONY: clean
 clean:
-	rm -f *.o *.bin *.bin.h exploit
+	rm -f *.o *.bin *.bin.h *.addr.h exploit
