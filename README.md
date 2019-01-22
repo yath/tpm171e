@@ -3,7 +3,7 @@
 This page collects some technical information for the Philips (a.k.a. TPVision)
 Android TV; specifically, for my 2018 65OLED803 series. Addresses may vary.
 
-NOTE: This document is work in progress!
+**NOTE: This document is work in progress!**
 
 ## adb access
 
@@ -23,7 +23,7 @@ Don’t type `reboot bootloader`!
 
 ## cli\_shell
 
-`cli\_shell` is a debug tool that writes (via an `ioctl()` call (TODO: fill in details))
+`cli_shell` is a debug tool that writes (via an `ioctl()` call (TODO: fill in details))
 the requested command to `/dev/cli`, which is writable by the `shell` group (i.e. via
 `adb`). The command response is printed to the kernel log, which is not directly readable
 by the shell user, but shows up in the Android log.
@@ -33,12 +33,12 @@ For instance, to get a help, run:
 shell@PH7M_EU_1337:/ $ cli_shell help                                                               
 sh: can't create /proc/sys/kernel/printk: Permission denied
 sh: can't create /proc/sys/kernel/printk: Permission denied
-shell@PH7M_EU_1337:/ $ logcat -d|sed '/.* MTK_KL[^:]*: /p;d'
+shell@PH7M_EU_1337:/ $ logcat -d|sed 's/.* MTK_KL[^:]*: \(.*\)/\1/p;d'
 […]
-01-22 20:05:14.398  1238  1238 D MTK_KL  : <4>[ 1196.054971] cd:                     Change current directory
-01-22 20:05:14.398  1238  1238 D MTK_KL  : <4>[ 1196.054981] do:                     Repeat command
-01-22 20:05:14.398  1238  1238 D MTK_KL  : <4>[ 1196.054986] alias(a):               Add/Show current alias
-01-22 20:05:14.398  1238  1238 D MTK_KL  : <4>[ 1196.055025] ls:                     Recursive list all commands
+<4>[ 1196.054971] cd:                     Change current directory
+<4>[ 1196.054981] do:                     Repeat command
+<4>[ 1196.054986] alias(a):               Add/Show current alias
+<4>[ 1196.055025] ls:                     Recursive list all commands
 […]
 ```
 
