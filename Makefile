@@ -13,13 +13,13 @@ shellcode.o: shellcode.lds shellcode.S
 	$(CROSS)$(CC) $(CFLAGS) -nostdlib -o $@ $^
 
 shellcode.bin: shellcode.o
-	$(CROSS)$(OBJCOPY) -O binary $< $@
+	$(CROSS)$(OBJCOPY) -O binary -j .text --reverse-bytes=4 $< $@
 
 shellcode.bin.h: shellcode.bin
 	$(XXD) -i $^ > $@
 
 shellcode.addr.h: shellcode.o
-	$(READELF) -l $< | $(AWK) '$$1 == "LOAD" { print "tgt_addr_t shellcode_addr = "$$3";" }' > $@
+	$(READELF) -e $< | $(AWK) '/Entry point/ { print "tgt_addr_t shellcode_addr = "$$NF";" }' > $@
 
 exploit: main.c shellcode.bin.h shellcode.addr.h
 	$(CC) $(CFLAGS) -I$(CURDIR) -o $@ $<
