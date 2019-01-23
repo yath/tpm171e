@@ -10,6 +10,7 @@ READELF := readelf
 AWK := awk
 
 shellcode.o: shellcode.lds shellcode.S
+	echo '.ascii "Built at $(shell date)"' > buildts.S
 	$(CROSS)$(CC) $(CFLAGS) -nostdlib -o $@ $^
 
 shellcode.bin: shellcode.o
@@ -26,4 +27,4 @@ exploit: main.c shellcode.bin.h shellcode.addr.h
 
 .PHONY: clean
 clean:
-	rm -f *.o *.bin *.bin.h *.addr.h exploit
+	rm -f *.o *.bin *.bin.h *.addr.h buildts.S exploit
