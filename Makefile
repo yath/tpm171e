@@ -1,5 +1,5 @@
 .PHONY: all
-all: exploit
+all: exploit decrypt
 
 CFLAGS += -W -Wall -Wextra
 CROSS := arm-none-eabi-
@@ -25,6 +25,9 @@ shellcode.addr.h: shellcode.o
 exploit: main.c shellcode.bin.h shellcode.addr.h
 	$(CC) $(CFLAGS) -I$(CURDIR) -o $@ $<
 
+decrypt: decrypt.c
+	$(CC) $(CFLAGS) -o $@ $< -lcrypto
+
 .PHONY: clean
 clean:
-	rm -f *.o *.bin *.bin.h *.addr.h buildts.S exploit
+	rm -f *.o *.bin *.bin.h *.addr.h buildts.S exploit decrypt

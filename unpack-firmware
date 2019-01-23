@@ -1,0 +1,149 @@
+#!/bin/bash
+set -euo pipefail
+
+# tools. change paths if necessary.
+abootimg=abootimg       # https://github.com/ggrandou/abootimg
+unsquashfs=unsquashfs   # https://android.googlesource.com/platform/external/squashfs-tools
+ext2rd=ext2rd           # https://github.com/qmfrederik/extfstools
+
+# https://toengel.net/philipsblog/firmware-download/
+if [[ "$#" -lt 1 ]]; then
+    echo "Usage: $0 <update.zip>" >&2
+    exit 1
+fi
+
+decrypt="$(dirname "$(readlink -f "$0")")/decrypt"
+if [[ ! -x "$decrypt" ]]; then
+    echo "decrypt binary not found (looked at $decrypt)" >&2
+    echo "try: make -C $(dirname "$decrypt") decrypt" >&2
+    exit 1
+fi
+
+zipfile="$1"
+outdir="${zipfile%.zip}"
+if [[ "$outdir" == "$zipfile" ]]; then
+    outdir="${zipfile}.out"
+fi
+
+echo "Unpacking $zipfile to $outdir"
+
+# Unpack *.upg file from .zip into temporary directory. Extract the upg file
+# to outdir.
+
+tmpdir="$(mktemp -d)"
+trap "rm -rf '$tmpdir'" EXIT
+
+unzip -d "$tmpdir" "$zipfile"
+
+upgfiles=("$tmpdir"/*.upg)
+if [[ "${#upgfiles[@]}" -ne 1 ]]; then
+    echo "update.zip '$zipfile' contains ${#upgfiles[@]}, want exactly one" >&2
+    echo "update.zip contents:" >&2
+    ls -l -R "$tmpdir" >&2
+    exit 1
+fi
+
+# The .upg file is an Android recovery update.zip.
+upgfile="${upgfiles[0]}"
+unzip -d "$outdir" "$upgfile"
+rm -f "$upgfile"
+
+# Decrypt .zip files
+rc=0
+for enczip in "$outdir"/*.zip; do
+    if ! "$decrypt" "$enczip"; then
+        echo "Failed to decrypt $enczip" >&2
+        rc=1
+        continue
+    fi
+
+    deczip="${enczip}.dec"
+    if [[ ! -e "$deczip" ]]; then
+        echo "Hmm.. $decrypt exited successfully but did not create a $deczip" >&2
+        rc=1
+        continue
+    fi
+
+    if ! file -bi "$deczip" | grep -q '^application/zip'; then
+        echo "WARNING: $deczip might not be a .zip file, not renaming" >&2
+        rc=1
+        continue
+    fi
+
+    mv -vf "$deczip" "$enczip"
+done
+
+# Unpack all .zip files
+for zip in "$outdir"/*.zip; do
+    if ! unzip -d "$outdir" "$zip"; then
+        echo "Unpacking $zip failed, not removing" >&2
+        rc=1
+        continue
+    fi
+
+    rm -vf "$zip"
+done
+
+# Concatenate system image
+if ! cat "$outdir"/system?.img > "$outdir"/system.img; then
+    echo "Concatenating system images failed" >&2
+    rc=1
+else
+    rm -vf "$outdir"/system?.img
+fi
+
+# Extract boot images
+if ! which "$abootimg" 2>/dev/null; then
+    echo "$abootimg is not installed, not unpacking boot images" >&2
+    rc=1
+else
+    for img in "$outdir"/{boot,factory,recovery}.img; do
+        abs="$(readlink -f "$img")" # for the subshell which has a different $PWD
+        imgdir="${img%.img}"
+        mkdir -p "$imgdir"
+        if ! (cd "$imgdir" && "$abootimg" -x "$abs"); then
+            echo "Extracting $img to $imgdir failed" >&2
+            rc=1
+        else
+            rm -vf "$img"
+        fi
+    done
+fi
+
+# Extract rootfs
+if ! which "$unsquashfs" 2>/dev/null; then
+    echo "$unsquashfs is not installed, not unpacking rootfs" >&2
+    rc=1
+else
+    img="$outdir"/rootfs.bin
+    imgdir="${img%.bin}"
+    if ! "$unsquashfs" -d "$imgdir" -li "$img"; then
+        echo "Extracting $img to $imgdir failed" >&2
+        rc=1
+    else
+        rm -vf "$img"
+    fi
+fi
+
+# Extract system.img
+if ! which "$ext2rd" 2>/dev/null; then
+    echo "$ext2rd is not installed, not unpacking system image" >&2
+    rc=1
+else
+    img="$outdir"/system.img
+    imgdir="${img%.img}"
+    mkdir -p "$imgdir"
+    if ! "$ext2rd" "$img" ./:"$imgdir"; then
+        echo "Extracting $img to $imgdir failed" >&2
+        rc=1
+    else
+        rm -vf "$img"
+    fi
+fi
+
+# The End
+if (( rc )); then
+    echo "Warnings encountered; please check output!" >&2
+fi
+echo "Unpacked $zipfile to $outdir, have fun!"
+exit "$rc"
