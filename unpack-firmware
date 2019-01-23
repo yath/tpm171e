@@ -110,19 +110,24 @@ else
     done
 fi
 
-# Extract rootfs
+# Extract rootfs and 3rd_file
 if ! which "$unsquashfs" 2>/dev/null; then
     echo "$unsquashfs is not installed, not unpacking rootfs" >&2
     rc=1
 else
-    img="$outdir"/rootfs.bin
-    imgdir="${img%.bin}"
-    if ! "$unsquashfs" -d "$imgdir" -li "$img"; then
-        echo "Extracting $img to $imgdir failed" >&2
+    if ! mv "$outdir"/3rd_file "$outdir"/3rd_file.bin; then
+        echo "Renaming 3rd_file failed" >&2
         rc=1
-    else
-        rm -vf "$img"
     fi
+    for img in "$outdir"/{3rd_file,rootfs}.bin; do
+        imgdir="${img%.bin}"
+        if ! "$unsquashfs" -d "$imgdir" -li "$img"; then
+            echo "Extracting $img to $imgdir failed" >&2
+            rc=1
+            continue
+        fi
+        rm -vf "$img"
+    done
 fi
 
 # Extract system.img
