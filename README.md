@@ -23,7 +23,7 @@ Don’t type `reboot bootloader`!
 
 ## cli\_shell
 
-`cli_shell` is a debug tool that writes (via an `ioctl()` call (TODO: fill in details))
+`cli_shell` is a debug tool that writes (via `ioctl(fd, 1, command_buffer)`)
 the requested command to `/dev/cli`, which is writable by the `shell` group (i.e. via
 `adb`). The command response is printed to the kernel log, which is not directly readable
 by the shell user, but shows up in the Android log.

@@ -1,5 +1,5 @@
 .PHONY: all
-all: exploit decrypt
+all: exploit decrypt cli
 
 CFLAGS += -W -Wall -Wextra
 CROSS := arm-none-eabi-
@@ -28,6 +28,9 @@ exploit: main.c shellcode.bin.h shellcode.addr.h
 decrypt: decrypt.c
 	$(CC) $(CFLAGS) -o $@ $< -lcrypto
 
+cli: cli.go
+	GOARCH=arm go build $<
+
 .PHONY: clean
 clean:
-	rm -f *.o *.bin *.bin.h *.addr.h buildts.S exploit decrypt
+	rm -f *.o *.bin *.bin.h *.addr.h buildts.S exploit decrypt cli
