@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"sort"
 )
 
 var dumpKernel = flag.String("dump_kernel", "", "dump uncompressed kernel to the filename given")
@@ -66,31 +67,31 @@ func getaddr(data []byte) (uint32, error) {
 	if data[3] != 0xc0 {
 		return 0, errors.New("does not look like an address")
 	}
-	return uint32(data[3])<<24 | uint32(data[2])<<12 | uint32(data[1])<<8 | uint32(data[0]), nil
+	return uint32(data[3])<<24 | uint32(data[2])<<16 | uint32(data[1])<<8 | uint32(data[0]), nil
 }
 
-// symbol is a kernel symbol with a start and an end address.
+// symbol is a kernel symbol with an address and a name.
 type symbol struct {
-	start, end uint32
-	name       string
+	name string
+	addr uint32
 }
 
 // String formats s nicely.
 func (s *symbol) String() string {
-	return fmt.Sprintf("[%08x-%08x] %s", s.start, s.end, s.name)
+	return fmt.Sprintf("[%08x] %s", s.addr, s.name)
 }
 
 // getSymtab tried to find the symbol table in kernel.
 //
 // The expected format is:
 //
-// [4 byte start address of symbol 1]
-// [4 byte end address of symbol 1]
-// [4 byte start address of symbol 2]
-// [4 byte end address of symbol 2]
+// [4 byte char *name_sym1]
+// [4 byte void *addr_sym1]
+// [4 byte char *name_sym2]
+// [4 byte void *addr_sym2]
 // […]
-// [zero-terminated name of symbol 1]
-// [zero-terminated name of symbol 2]
+// [char name_symN[]]
+// [char name_symM[]]
 // […]
 // 0x00
 //
@@ -146,13 +147,26 @@ func getSymtab(kernel []byte) ([]*symbol, error) {
 	}
 	log.Printf("found %d addresses", len(addrs))
 
-	if len(strs)*2 != len(addrs) {
-		return nil, fmt.Errorf("not twice as many addresses (%d) as strings (%d)", len(addrs), len(strs))
+	if len(addrs)%2 != 0 {
+		return nil, fmt.Errorf("odd number of addresses (%d)", len(addrs))
 	}
 
-	ret := make([]*symbol, len(strs))
+	type addrpair struct {
+		strp, symp uint32
+	}
+	pairs := make([]addrpair, len(addrs)/2)
+	for i = 0; i < len(pairs); i++ {
+		pairs[i] = addrpair{addrs[i*2], addrs[i*2+1]}
+	}
+	sort.Slice(pairs, func(x, y int) bool { return pairs[x].strp < pairs[y].strp })
+
+	if len(pairs) != len(strs) {
+		return nil, fmt.Errorf("not exactly as many addrpairs (%d) as strings (%d)", len(pairs), len(strs))
+	}
+
+	ret := make([]*symbol, len(pairs))
 	for i, str := range strs {
-		ret[i] = &symbol{start: addrs[i*2], end: addrs[i*2+1], name: str}
+		ret[i] = &symbol{addr: pairs[i].symp, name: str}
 	}
 
 	return ret, nil
@@ -185,9 +199,19 @@ func main() {
 
 	log.Printf("Found kernel: %d bytes", len(kernel))
 
-	if bytes.Index(kernel, []byte("Linux version ")) < 0 {
+	veri := bytes.Index(kernel, []byte("Linux version "))
+	if veri < 0 {
 		log.Fatalf("Does not look like a Linux kernel image, though :(")
 	}
+	verend := nextIndex(kernel, []byte{0}, veri)
+	if verend < 0 {
+		log.Fatalf("Linux version string terminator not found")
+	}
+	for kernel[verend-1] == '\n' || kernel[verend-1] == '\r' {
+		verend--
+	}
+
+	log.Printf("Found version: %q", string(kernel[veri:verend]))
 
 	didSomething := false
 
@@ -220,13 +244,8 @@ func main() {
 		}
 
 		for _, sym := range syms {
-			for _, s := range []string{
-				fmt.Sprintf("%s = 0x%08x;", sym.name, sym.start),
-				fmt.Sprintf("%s_end = 0x%08x;", sym.name, sym.end),
-			} {
-				if _, err := fmt.Fprintln(f, s); err != nil {
-					log.Fatalf("Can't write to %q: %v", *dumpSymtab, err)
-				}
+			if _, err := fmt.Fprintf(f, "%s = 0x%08x;\n", sym.name, sym.addr); err != nil {
+				log.Fatalf("Can't write to %q: %v", *dumpSymtab, err)
 			}
 		}
 		didSomething = true
