@@ -49,7 +49,7 @@ Some useful commands:
 
 ### Obtaining addresses of `mtk\_mod`
 
-`mtk_mod.ko` contains the code for the `/dev/cli` handlers. To obtain a stack trace and
+`dtv_driver.ko` contains the code for the `/dev/cli` handlers. To obtain a stack trace and
 code dump, run `adb logcat` in one window and `adb shell cli_shell r 0x0 0x10` in another,
 causing a NULL dereference.
 
