@@ -46,3 +46,17 @@ Some useful commands:
 * `b.ver`: Prints system information
 * `r`: Read memory
 * `w`: Write memory
+
+### Obtaining addresses of `mtk\_mod`
+
+`mtk_mod.ko` contains the code for the `/dev/cli` handlers. To obtain a stack trace and
+code dump, run `adb logcat` in one window and `adb shell cli_shell r 0x0 0x10` in another,
+causing a NULL dereference.
+
+```
+[ 5075.501468] [<bf38e598>] (_CmdMemRead+0x90/0xe0 [mtk_mod]) from [<bf0cf9d8>] (CLI_CmdList+0x44c/0x494 [mtk_mod])
+[ 5075.502379] [<bf0cf9d8>] (CLI_CmdList+0x44c/0x494 [mtk_mod]) from [<bf0d0194>] (CLI_PromptParser+0x234/0x29c [mtk_mod])
+[ 5075.503255] [<bf0d0194>] (CLI_PromptParser+0x234/0x29c [mtk_mod]) from [<bf0cee4c>] (CLI_Input+0xb4/0x2fc [mtk_mod])
+[ 5075.504252] [<bf0cee4c>] (CLI_Input+0xb4/0x2fc [mtk_mod]) from [<bf3201a4>] (ThreadProc+0x9c/0xa0 [mtk_mod])
+[ 5075.504842] [<c004da70>] (kthread+0xbc/0xc8) from [<c000e718>] (ret_from_fork+0x14/0x20)
+```
