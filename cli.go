@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 	"unsafe"
 )
 
@@ -17,7 +18,7 @@ const devCli = "/dev/cli"
 type lineCallback func(line string, cmd *exec.Cmd) error
 
 func streamLog(cb lineCallback) error {
-	cmd := exec.Command("logcat", "-bmain", "-s", "-T1", "MTK_KL")
+	cmd := exec.Command("logcat", "-bmain", "-s", "MTK_KL")
 	pipe, err := cmd.StdoutPipe()
 	if err != nil {
 		return fmt.Errorf("can't get a pipe for logcat child: %v", err)
@@ -107,8 +108,9 @@ func sendStringAsChars(f *os.File, cmd string) error {
 
 func streamCommand(f *os.File, command string) error {
 	const sentinelKey = "cl1w4sh3re"
-	const sentinelValStart = "sTaRT"
-	const sentinelValEnd = "TheenD"
+	now := time.Now().UnixNano()
+	sentinelValStart := fmt.Sprintf("sTaRT.%d", now)
+	sentinelValEnd := fmt.Sprintf("enD.%d", now)
 	putSentinel := func(value string) error {
 		for _, c := range []string{fmt.Sprintf("alias %s %s", sentinelKey, value), "alias"} {
 			if err := sendString(f, c); err != nil {
@@ -134,18 +136,24 @@ func streamCommand(f *os.File, command string) error {
 		if state == stateWaitStart {
 			if hasSentinel(line, sentinelValStart) {
 				state = stateWaitEnd
-				for _, err := range []error{sendString(f, command), putSentinel(sentinelValEnd)} {
-					if err != nil {
-						return fmt.Errorf("Error while sending: %v", err)
+				go func() { // Need to run asynchronously; the ioctl() blocks while the handler runs.
+					for _, err := range []error{sendString(f, command), putSentinel(sentinelValEnd)} {
+						if err != nil {
+							log.Fatalf("Error while sending: %v", err)
+						}
 					}
-				}
+				}()
 			}
 		} else if state == stateWaitEnd {
 			if hasSentinel(line, sentinelValEnd) {
 				cmd.Process.Kill()
 				state = stateDone
 			} else {
-				log.Print(line)
+				if idx := strings.Index(line, "] "); idx > 0 {
+					line = line[idx+2:]
+				}
+				line = strings.Replace(line, "\r", "", -1)
+				fmt.Println(line)
 			}
 		}
 
