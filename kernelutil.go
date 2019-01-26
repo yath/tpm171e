@@ -72,13 +72,19 @@ func getaddr(data []byte) (uint32, error) {
 
 // symbol is a kernel symbol with an address and a name.
 type symbol struct {
-	name string
-	addr uint32
+	name   string
+	addr   uint32
+	offset int
 }
 
 // String formats s nicely.
 func (s *symbol) String() string {
-	return fmt.Sprintf("[%08x] %s", s.addr, s.name)
+	return fmt.Sprintf("[%08x] %s (Image+0x%x", s.addr, s.name, s.offset)
+}
+
+// lds returns a symbol as a linker script statement.
+func (s *symbol) lds() string {
+	return fmt.Sprintf("%s = 0x%08x; /* = 0x%08x + 0x%x */", s.name, s.addr, s.addr-uint32(s.offset), s.offset)
 }
 
 // getSymtab tried to find the symbol table in kernel.
@@ -123,23 +129,33 @@ func getSymtab(kernel []byte) ([]*symbol, error) {
 	}
 	log.Printf("start of string table in kernel: 0x%x", strStart)
 
+	// Find end of string table.
 	strEnd := nextIndex(kernel, []byte{0, 0}, strStart)
 	if strEnd < 0 {
 		return nil, errors.New("end of string table not found")
 	}
 
-	strs := []string{}
+	// Gather all strings and their offsets in kernel.
+	type strAndOff struct {
+		val string
+		off int
+	}
+	strs := []strAndOff{}
+
+	off := strStart
 	for _, sym := range bytes.Split(kernel[strStart:strEnd], []byte{0}) {
-		strs = append(strs, string(sym))
+		strs = append(strs, strAndOff{string(sym), off})
+		off += len(sym) + 1
 	}
 	log.Printf("found %d strings", len(strs))
 
+	// Walk back from start of string table and find all addresses.
 	addrEnd := strStart - 4
 	i = addrEnd
 	addrs := []uint32{}
 	for i > 0 {
 		if addr, err := getaddr(kernel[i:]); err == nil {
-			addrs = append(addrs, addr)
+			addrs = append([]uint32{addr}, addrs...) // Prepend; we’re walking backwards.
 			i -= 4
 		} else {
 			break
@@ -147,12 +163,13 @@ func getSymtab(kernel []byte) ([]*symbol, error) {
 	}
 	log.Printf("found %d addresses", len(addrs))
 
+	// Group addresses into [void *sym, char *name] pairs, sort by name.
 	if len(addrs)%2 != 0 {
 		return nil, fmt.Errorf("odd number of addresses (%d)", len(addrs))
 	}
 
 	type addrpair struct {
-		strp, symp uint32
+		symp, strp uint32
 	}
 	pairs := make([]addrpair, len(addrs)/2)
 	for i = 0; i < len(pairs); i++ {
@@ -164,9 +181,11 @@ func getSymtab(kernel []byte) ([]*symbol, error) {
 		return nil, fmt.Errorf("not exactly as many addrpairs (%d) as strings (%d)", len(pairs), len(strs))
 	}
 
+	// Build return value.
 	ret := make([]*symbol, len(pairs))
 	for i, str := range strs {
-		ret[i] = &symbol{addr: pairs[i].symp, name: str}
+		stroff := pairs[i].strp - uint32(str.off)
+		ret[i] = &symbol{addr: pairs[i].symp, name: str.val, offset: int(pairs[i].symp - stroff)}
 	}
 
 	return ret, nil
@@ -244,7 +263,7 @@ func main() {
 		}
 
 		for _, sym := range syms {
-			if _, err := fmt.Fprintf(f, "%s = 0x%08x;\n", sym.name, sym.addr); err != nil {
+			if _, err := fmt.Fprintln(f, sym.lds()); err != nil {
 				log.Fatalf("Can't write to %q: %v", *dumpSymtab, err)
 			}
 		}
