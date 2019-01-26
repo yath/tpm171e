@@ -5,6 +5,7 @@ set -euo pipefail
 abootimg=abootimg       # https://github.com/ggrandou/abootimg
 unsquashfs=unsquashfs   # https://android.googlesource.com/platform/external/squashfs-tools
 ext2rd=ext2rd           # https://github.com/qmfrederik/extfstools
+cpio=cpio
 
 # https://toengel.net/philipsblog/firmware-download/
 if [[ "$#" -lt 1 ]]; then
@@ -104,9 +105,20 @@ else
         if ! (cd "$imgdir" && "$abootimg" -x "$abs"); then
             echo "Extracting $img to $imgdir failed" >&2
             rc=1
-        else
-            rm -vf "$img"
+            continue
         fi
+        rm -vf "$img"
+
+        # Extract initrd
+        initrd="${imgdir}/initrd.img"
+        initrddir="${initrd%.img}"
+        mkdir -p "$initrddir"
+        if ! gzip -cd "$initrd" | cpio -D "$initrddir" -id; then
+            echo "Extracting $initrd to $initrddir failed" >&2
+            rc=1
+            continue
+        fi
+        rm -vf "$initrd"
     done
 fi
 
