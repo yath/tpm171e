@@ -17,22 +17,6 @@ CROSS := arm-none-eabi-
 
 RUN_CLI_DIR := /data/local/tmp
 
-shellcode.o: shellcode.lds shellcode.S
-	echo '.ascii "Built at $(shell date)"' > buildts.S
-	$(CROSS)$(CC) $(CFLAGS) -nostdlib -o $@ $^
-
-shellcode.bin: shellcode.o
-	$(CROSS)$(OBJCOPY) -O binary -j .text --reverse-bytes=4 $< $@
-
-shellcode.bin.h: shellcode.bin
-	$(XXD) -i $^ > $@
-
-shellcode.addr.h: shellcode.o
-	$(READELF) -e $< | $(AWK) '/Entry point/ { print "tgt_addr_t shellcode_addr = "$$NF";" }' > $@
-
-exploit: main.c shellcode.bin.h shellcode.addr.h
-	$(CC) $(CFLAGS) -I$(CURDIR) -o $@ $<
-
 decrypt: decrypt.c
 	$(CC) $(CFLAGS) -o $@ $< -lcrypto
 
@@ -49,19 +33,44 @@ threaddump.txt:
 threaddump.lds: threaddump.txt
 	$(PERL) -nE 'say sprintf("%s = 0x%08x;", $$2, hex($$1)-hex($$3)) for /\[<(.*?)>\] \((.*?)\+0x(.*?)\//' < $< | sort -u | sort -k3 > $@
 
+zImage:
 dtv_driver.ko:
 	echo "Grab $@ from firmware dump (all copies are the same)"; exit 1
 
-EXPECT_SYM=_Cust_dump_all_thread
+kernel.lds: zImage kernelutil
+	./kernelutil -dump_symtab=$@ $<
+
+MATCH_SYM=_Cust_dump_all_thread
 dtv_driver.lds: dtv_driver.ko threaddump.lds
 	set -x; \
 	vma=$$(	 $(CROSS)objdump -t dtv_driver.ko | \
-		actual=$$($(PERL) -nE 'say $$1 if /^$(EXPECT_SYM) = (.*);/' < threaddump.lds) \
-		$(PERL) -nE 'say sprintf("0x%08x", hex($$ENV{actual})-hex($$1)) if /(.*?) .*$(EXPECT_SYM)/' \
-	); 	echo VMA: $$vma; if [ x"$$vma" = x ]; then echo $(EXPECT_SYM) not found, check $^; exit 1; fi; \
+		actual=$$($(PERL) -nE 'say $$1 if /^$(MATCH_SYM) = (.*);/' < threaddump.lds) \
+		$(PERL) -nE 'say sprintf("0x%08x", hex($$ENV{actual})-hex($$1)) if /(.*?) .*$(MATCH_SYM)/' \
+	); 	echo VMA: $$vma; if [ x"$$vma" = x ]; then echo $(MATCH_SYM) not found, check $^; exit 1; fi; \
 	$(CROSS)objdump --adjust-vma=$$vma -t dtv_driver.ko | \
-	$(PERL) -nE 'say "$$2 = 0x$$1;" if /^(\S+)\s+g\s.*\s(\S+)$$/' | \
+	$(PERL) -nE 'say "$$2 = 0x$$1;" if /^([0-9a-f]+)\s+.\s.*\s(\S+)$$/ && hex($$1) > 0' | \
 	sort -k3 > $@
+
+LOAD_SYM=_CmdVersion
+shellcode.lds: shellcode.lds.in dtv_driver.lds
+	loadaddr=$$($(PERL) -nE 'say $$1 if /^$(LOAD_SYM) = (.*);/' < dtv_driver.lds) \
+	$(PERL) -pe 's/#LOADADDR#/$$ENV{loadaddr}/g' < $< > $@
+
+shellcode.o: shellcode.lds dtv_driver.lds kernel.lds shellcode.S
+	echo '.ascii "Built at $(shell date)"' > buildts.S
+	$(CROSS)$(CC) $(CFLAGS) -nostdlib -o $@ $^
+
+shellcode.bin: shellcode.o
+	$(CROSS)$(OBJCOPY) -O binary -j .text --reverse-bytes=4 $< $@
+
+shellcode.bin.h: shellcode.bin
+	$(XXD) -i $^ > $@
+
+shellcode.addr.h: shellcode.o
+	$(READELF) -e $< | $(AWK) '/Entry point/ { print "tgt_addr_t shellcode_addr = "$$NF";" }' > $@
+
+exploit: main.c shellcode.bin.h shellcode.addr.h
+	$(CC) $(CFLAGS) -I$(CURDIR) -o $@ $<
 
 .PHONY: run-cli
 run-cli: cli
@@ -69,4 +78,4 @@ run-cli: cli
 
 .PHONY: clean
 clean:
-	rm -f *.o *.bin *.bin.h *.addr.h buildts.S $(ALL_BINARY_TARGETS)
+	rm -f *.o *.bin *.bin.h *.addr.h buildts.S *.lds $(ALL_BINARY_TARGETS)

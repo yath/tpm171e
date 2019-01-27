@@ -1,0 +1,5 @@
+.*.swp
+Image
+zImage
+dtv_driver.ko
+threaddump.txt
