@@ -42,12 +42,26 @@ kernelutil: kernelutil.go
 cli: cli.go
 	GOARCH=arm $(GO) build -o $@ $<
 
-# Cust_dump_all_thread (b.da)
+# _Cust_dump_all_thread (b.da)
 threaddump.txt:
 	$(MAKE) run-cli CLICOMMAND=b.da | tee $@
 
 threaddump.lds: threaddump.txt
 	$(PERL) -nE 'say sprintf("%s = 0x%08x;", $$2, hex($$1)-hex($$3)) for /\[<(.*?)>\] \((.*?)\+0x(.*?)\//' < $< | sort -u | sort -k3 > $@
+
+dtv_driver.ko:
+	echo "Grab $@ from firmware dump (all copies are the same)"; exit 1
+
+EXPECT_SYM=_Cust_dump_all_thread
+dtv_driver.lds: dtv_driver.ko threaddump.lds
+	set -x; \
+	vma=$$(	 $(CROSS)objdump -t dtv_driver.ko | \
+		actual=$$($(PERL) -nE 'say $$1 if /^$(EXPECT_SYM) = (.*);/' < threaddump.lds) \
+		$(PERL) -nE 'say sprintf("0x%08x", hex($$ENV{actual})-hex($$1)) if /(.*?) .*$(EXPECT_SYM)/' \
+	); 	echo VMA: $$vma; if [ x"$$vma" = x ]; then echo $(EXPECT_SYM) not found, check $^; exit 1; fi; \
+	$(CROSS)objdump --adjust-vma=$$vma -t dtv_driver.ko | \
+	$(PERL) -nE 'say "$$2 = 0x$$1;" if /^(\S+)\s+g\s.*\s(\S+)$$/' | \
+	sort -k3 > $@
 
 .PHONY: run-cli
 run-cli: cli
