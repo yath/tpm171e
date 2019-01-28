@@ -1,0 +1,1950 @@
+cd			:Change current directory
+do			:Repeat command
+a			:Add/Show current alias
+ls			:Recursive list all commands
+r			:Memory read(word)
+w			:Memory write(word)
+cust			:Get customer name
+l			:Turn on/off linux mode
+;			:Line comment
+b.mc			:Memory copy
+b.ms			:Memory set
+b.msb			:Memory set(byte)
+b.mord			:Memory order set, Ex: mord [addr] [bunit] [len] [step] [init val]
+b.mcmp			:Memory comparision, Ex: mcmp [addr1] [addr2] [byte-len]
+b.mdmp			:Memory dump, Ex: mord [addr] [bytelen]
+b.stop			:Stop RS232 transparent mode
+b.sv			:System mode detection
+b.ver			:System version/build date
+b.reboot			:System reboot/restart
+b.cp			:open loop, calpll [ps] [clock Hz]
+b.gpc			:gpc [#|if|cpu|sys|apll1|apll2|adc|usb|hdmi|pix|dm|vo|mem|bus]
+b.vco			:vco [#|cpu|sys|apll1|apll2|adc|eth|ethnet|sawless ]
+b.slp			:sleep [micro seconds]
+b.sc			:sc [0|4|8|16], set I/D cache as 4/8/16 KB, 0 is disabled.
+b.bt			:bt
+b.cpi			:cpi [period seconds]
+b.swd			:swd [0|1]
+b.so			:Memory protect on/off, Watchdog on/off, Pseudo watchdog assert on/off, release reboot on/off.
+b.chipid			:print chip id
+b.jtag			:Select JTAG input
+b.scm
+b.dtvall			:user thread stackframe dump for all dtv_svc threads
+b.ds			:user thread stackframe dump for single thread in detail
+b.da			:all thread dump in kernel
+0.et			:Enter RS232 transparent mode
+0.ft			:Set RS232 factory mode
+0.st			:Stop RS232 transparent mode
+0.lc			:Show Log Counter
+0.lcr			:Reset Log Counter
+osd.i			:Init osd driver
+osd.q			:Dump osd info
+osd.a			:Adjust OSD start position
+osd.sll			:Set OSD LOG level
+osd.gll			:Get OSD LOG level
+osd.sd			:set osd dbg info
+osd.gd			:get osd dbg info
+osd.logo			:Show logo
+osd.d_on			:OSD.d_on
+osd.d_off			:OSD.d_off
+osd.d_l			:OSD.d_l
+osd.p.res			:Reset plane
+osd.p.en			:Set/get plane enable flag
+osd.p.flp			:Flip region list to a plane
+osd.p.afa			:Set/get global blending alpha value
+osd.p.fa			:Set/get fading blending value
+osd.p.pm			:Enable pre-multiplied alpha format
+osd.p.c			:Replace bitmap data to particular color
+osd.p.reg			:Dump plane register
+osd.p.info			:Dump plane detail info
+osd.p.pt			:Show Plane pattern
+osd.p.dbm			:Dump plane bitmap data to file
+osd.p.dibm			:Dump bitmap into plane data address from file
+osd.p.hf			:Enable HFilter
+osd.p.vf			:Enable VFilter
+osd.p.ff			:Configure fifo
+osd.l.cr			:Create region list
+osd.l.ls			:List region list
+osd.l.dump			:Dump all in list
+osd.l.del			:Delete region list
+osd.l.det			:Detach region(s) from list
+osd.r.n			:Allocate new region
+osd.r.ins			:Insert region into list
+osd.r.del			:Delete region from list
+osd.r.s			:Set region property
+osd.r.pt			:Draw region pattern
+osd.sc.s			:Scale OSD plane
+osd.sc.pt			:Scaler pattern
+osd.sc.apt			:Scaler alpha pattern
+osd.sc.l			:Set low pass filter
+pmx.i			:init
+pmx.e			:enable/disable LVDS
+pmx.p			:enable/disable test pattern
+pmx.pc			:enable/disable test multi pattern
+pmx.ostgpt			:ostg paten
+pmx.l			:show panel list
+pmx.q			:dump pmx(scpos) info
+pmx.d_on			:PMX.d_on
+pmx.d_off			:PMX.d_off
+pmx.d_l			:PMX.d_l
+pmx.s.bg			:background color
+pmx.s.po			:plane order
+pmx.s.poa			:plane order array
+pmx.s.pma			:plane mix alpha
+pmx.s.bl			:backlight
+pmx.s.d			:lvds driving current
+pmx.s.vcm			:lvds common voltage
+pmx.s.s			:lvds spread spectrum
+pmx.s.p			:panel resolution
+pmx.s.di			:panel driver init
+pmx.s.ps			:adjust power sequence
+pmx.s.ns			:NS lvds format
+pmx.s.jeida			:JEIDA lvds format
+pmx.s.sns			:Special NS lvds format
+pmx.s.10bit			:switch LVDS to 10bit
+pmx.s.swap			:even odd channel swap
+pmx.s.osdumpen			:Enable OutputStage Dump
+pmx.s.ffr			:Nptv force frame rate
+pmx.s.fr			:Nptv force free run
+pmx.s.boo			:OSTG border
+pmx.s.bc			:OSTG border color
+pmx.s.bparam			:OSTG border position
+pmx.s.pim			:Set Panel interface allowed mask
+pmx.s.ATERM_ATVO			:PmxLVDS_ATERM_ATVO_Setting
+pmx.s.ATERM_ATVO_Restore			:PmxLVDS_ATERM_ATVO_Restore
+pmx.s.ATVO_Set			:PmxLVDS_ATVO_Set
+pmx.s.APSRC_Set			:PmxLVDS_APSRC_Set
+pmx.s.ANSRC_Set			:PmxLVDS_ANSRC_Set
+pmx.s.PADPD_Set			:PmxLVDS_PADPD_Set
+pmx.s.RESET_Set			:PmxLVDS_RESET_Set
+pmx.s.VCOPhase_SEL			:PmxDrvVCOPhase_SEL
+pmx.s.DDDSFreeRun			:PmxSET_DDDSFreeRun
+pmx.s.dddsel			:PmxSET_DDDSErrorLimit
+pmx.s.ctlw			:Set control word
+pmx.s.ctlw2			:Set control word2
+pmx.s.scanpwm			:Set scanning pwm
+pmx.s.scanpwms			:Get scanning status
+pmx.s.scanstep			:Set scanning step control
+pmx.s.scantarget			:Set scanning step target
+pmx.s.scandl			:Set scanning debug log level
+pmx.s.ESDfg			:ESDProtectflag
+pmx.ps.q			:query post scaler status
+pmx.ps.ht			:hsync scaler timing test
+pmx.ps.vt			:vsync scaler timing test
+pmx.ps.st			:set data trigger
+pmx.d.dump			:dump scpos
+pmx.od.i			:OD initial
+pmx.od.on			:OD enable
+pmx.od.pcidon			:PCID enable
+pmx.od.idx			:OD index
+pmx.od.bypass			:OD bypass
+pmx.od.q			:OD query status
+pmx.od.oreset			:OD overflow reset
+pmx.od.oget			:OD overflow get
+pmx.od.chk			:OD check
+pmx.od.st			:OD stress test
+pmx.od.reset			:OD reset test
+pmx.od.sel			:OD table select
+pmx.od.dma			:OD DMA
+pmx.od.lcod			:Set Local OD
+pmx.vopll.s			:vopll status
+pmx.vopll.xtal			:vopll source from xtal
+pmx.vopll.freq			:set vopll frequency
+pmx.vopll.calel			:calculate error limit
+pmx.vopll.vtrl			:VOPLL VCO monitor out
+pmx.vopll.tm			:VOPLL Test Mode with SS
+pmx.vopll.at			:VOPLL Analog test
+pmx.dvopll.s			:dvopll status
+pmx.dvopll.chk			:dvopll check
+pmx.dvopll.scan			:dvopll scan lock region
+pmx.if.crc			:LVDS TX crc
+pmx.if.dpen			:LVDS digital pad on/off
+pmx.if.apen			:LVDS analog pad on/off
+pmx.if.sgroup			:LVDS set group
+pmx.if.agroup			:LVDS switch group auto
+pmx.if.cc			:Check DE and Clcok with LVDS cable 
+pmx.if.lineb			:6 line buffer bypass or enable
+pmx.if.hvq			:h/vsync encode query
+pmx.if.hvset			:h/vsync encode value set
+pmx.if.disprq			:DISP_R status query
+pmx.if.dispren			:DISP_R encode enable
+pmx.if.glactr			:glasses control
+pmx.if.glarst			:glasses reset mode control
+pmx.if.gladuty			:glasses duty control
+pmx.if.glaen			:glasses enable control
+pmx.if.isc			:Inverter sync control
+pmx.if.isd			:Inverter sync delay control
+pmx.if.pwmi			:Scan_PWN Initail
+pmx.if.pwmen			:Scan_PWN Enable
+pmx.if.pwmset			:Scan_PWN Set
+pmx.if.pwmat			:Scan_PWN Auto Test
+pmx.intr.q			:interrupt status query
+pmx.intr.s			:interrupt setting
+pmx.vb1.script			:V By One Script
+pmx.vb1.crc			:V By One CRC Check
+pmx.vb1.cal			:V By One Impendance Calibration
+pmx.vb1.p			:Set Panel vb1 flag
+pmx.vb1.tm			:Set Test Mode
+pmx.vb1.s			:Get VB1 status
+pmx.vb1.chk			:Get VB1 status
+pmx.vb1.cnt			:Get VB1 status
+pmx.vb1.on			:Set VB1 on
+pmx.vb1.off			:Set VB1 on
+pmx.vb1.swapt			:VByOne swap for test
+pmx.vb1.sap			:VByOne analog single pad enable
+pmx.vb1.vbw			:VByOne VPLL bandwidth set
+pmx.vb1.preoo			:Pre-emphasis on/off
+pmx.vb1.pre			:Pre-emphasis setting
+pmx.vb1.inx			:INX VB1 I2C cmd
+pmx.vb1.prst			:PLL RST cmd
+pmx.vb1.ys			:OSD_YS enable
+pmx.vb1.thre			:OSD_YS threshold
+pmx.vb1.sect			:2/4/8_Section test
+pmx.vb1.lockn			:LOCKN control
+pmx.graph.crc			:GraphMode_CRC_chk
+pmx.graph.on			:GraphMode_On
+pmx.graph.off			:GraphMode_Off
+pmx.graph.q			:GraphMode_Table_query
+pmx.graph.gm			:GraphMode Resolution setting
+pmx.graph.s			:GraphMode_UHD query
+pmx.graph.m			:GraphMode_UHD_Mode_setting
+pmx.graph.f			:GraphMode_Mode_format
+pmx.graph.lockn			:LOCKN_OSD control
+pmx.u.s			:uhd status query
+pmx.u.p			:uhd panel setting
+pmx.pll.s			:PLL freqence status
+pmx.pll.tm			:PLL VCO control voltage
+sif.i			:Sif init
+sif.diag			:Sif diagnostic
+sif.r			:Sif read
+sif.w			:Sif write
+sif.wb			:Sif write byte
+sif.sr			:Sif S/W Read
+sif.sw			:Sif S/W Write
+sif.sr0			:Sif S/W Read(0-SubAddr)
+sif.sw0			:Sif S/W Write(0-SubAddr)
+sif.prom			:Sif write PROM SRAM default value
+sif.pram			:Sif write PRAM SRAM default value
+sif.hdcp1x			:Sif write PRAM SRAM default value
+sif.hdcp2x			:Sif wirte HDCP2x rx key value
+sif.rhdcp1x			:Sif write PRAM SRAM default value
+sif.rhdcp2x			:Sif wirte HDCP2x rx key value
+sif.hdcpdump			:Dump HDCP PROM/PRAM
+sif.hdcp			:Sif write HDCP SRAM default value
+sif.mhdcp2x_key_eeprom			:write wfd hdcp2.x key into eeprom
+sif.mhdcp2x_key_tz			:use wfd hdcp2.x key in tz
+sif.mhdcp2x_key_test			:config wfd hdcp2.x key type
+sif.vgaedid			:Sif write Vga edid and read to SRAM default value
+sif.rvgae			:Sif read vga edid from SRAM
+sif.internaledid			:Sif write built-in HDMI edid and set to internal SRAM
+sif.edid3D			:Sif write built-in HDMI 3D edid and set to internal SRAM
+sif.edid4k2k30			:Sif write built-in HDMI 4K2K30 edid and set to internal SRAM for HDMI1.4 Port
+sif.edid14			:Sif write built-in HDMI 1.4 edid and set to internal SRAM
+sif.edid2			:Sif write built-in HDMI 4K2K edid and set to internal SRAM
+sif.redid2			:Sif read HDMI2.0 edid
+sif.redid2ram			:Sif read HDMI2.0 SRAM edid
+sif.edidmhl			:Sif write built-in HDMI 4K2K edid and set to internal SRAM
+sif.redidmhlsram			:Sif write built-in HDMI 4K2K edid and set to internal SRAM
+sif.wbhdcp			:Sif write byte to HDCP
+sif.rbhdcp			:Sif read byte from HDCP
+sif.wah			:Sif write all 320 bytes to HDCP
+sif.rah			:Sif read all 320 bytes from HDCP
+sif.edid			:Sif write EDID default value
+sif.redid			:Sif read EDID
+sif.edid1			:Sif write EDID port 1 default value
+sif.edid2			:Sif write EDID port 2 default value
+sif.edid3			:Sif write EDID port 3 default value
+sif.redid1			:Sif read EDID port 1
+sif.redid2			:Sif read EDID port 2
+sif.redid3			:Sif read EDID port 3
+sif.redidram			:READ EDID RAM
+sif.wae			:Sif write all 256 bytes to EDID
+sif.rae			:Sif read all 256 bytes from EDID
+sif.tr			:Tuner I2C No-sub-addr read
+sif.tw			:Tuner I2C No-sub-addr write
+sif.mr			:Multiple sub-addr I2C read
+sif.mw			:Multiple sub-addr I2C write
+sif.s			:Scan all SIF Buses
+sif.xr			:fully functional sif read
+sif.xw			:fully functional sif write
+sif.xmr			:fully functional sif Multi bus Read
+sif.sclst			:SCL test
+sif.sclstress			:SCL stress test
+sif.scleep			:SCL test via EEPROM access
+sif.edidrb			:edid read byte
+sif.m			:Montor CLI
+sif.d_on			:SIF.d_on
+sif.d_off			:SIF.d_off
+sif.d_l			:SIF.d_l
+pwm.sf			:PWM
+pwm.gf			:PWM
+pwm.sd			:PWM
+pwm.gd			:PWM
+pwm.s			:PWM
+pwm.ms			:PWM
+pwm.div			:PWM
+pwm.d_on			:PWM.d_on
+pwm.d_off			:PWM.d_off
+pwm.d_l			:PWM.d_l
+eeprom.r			:eeprom.r [eeprom-offset] [memptr] [memlen]
+eeprom.w			:eeprom.w [eeprom-offset] [memptr] [memlen]
+eeprom.rb			:eeprom.rb [eeprom-offset]
+eeprom.wb			:eeprom.wb [eeprom-offset] [byteval]
+eeprom.id			:eeprom.id
+eeprom.bw			:eeprom.bw
+eeprom.dump			:eeprom.dump
+eeprom.setcfg			:eeprom.setcfg
+eeprom.uw			:Get data from Uart and write to eeprom.
+eeprom.m			:eeprom.m [loopcnt] for stress test
+eeprom.tzrt			:eeprom.tzread test
+eeprom.tzwt			:eeprom.tzwrite test
+eeprom.tzst			:eeprom.tzstress test
+eeprom.d_on			:EEPROM.d_on
+eeprom.d_off			:EEPROM.d_off
+eeprom.d_l			:EEPROM.d_l
+eeprom.l.l			:eeprom.layout.l
+nim.id			:Set Tuner ID
+nim.ver			:Tuner version
+nim.hc			:Tuner Host Command
+nim.dl			:Set Debug Level
+nim.go			:Start Nim
+nim.freq			:Freq Set
+nim.sc			:Nim set cable parameters
+nim.gclv			:Nim get cable signal level
+nim.gclk			:Nim get cable lock status
+nim.dm			:Nim Detach MW
+nim.dtd			:Nim dtd
+nim.atd			:Nim atd
+nim.gettsfmt			:Get Ts format
+nim.settssp			:Set Ts serial/prallel
+nim.settstristate			:Set Ts tristate
+nim.st			:Set Tuner by Control-Word
+nim.gt			:Get Tuner register value
+nim.gtEx			:Get Tuner Reg-Val with register address
+nim.s			:Scan all Tuner device
+nim.rs			:Range search
+nim.sr			:Set R-Setting Value
+nim.da			:Disconnect Acq in Demod side
+nim.up			:Channel Up
+nim.down			:Channel Down
+nim.ch			:Channel Set
+nim.i			:Nim init
+nim.o			:Nim open
+nim.c			:Nim close
+nim.sbw			:Nim set BW
+nim.asbw			:Nim Adv set BW
+nim.gcsc			:Nim get cable signal parameter
+nim.dei2c			:Detach Tuner I2C
+nim.sctype			:Set Conn Type
+nim.sm			:Set mod
+nim.sft			:Set fine tune
+nim.sbsc			:Set dvbs blind scan continue
+nim.sbss			:Set dvbs blind scan stop
+nim.sct			:Set Connect Type
+ir.d_on			:IR.d_on
+ir.d_off			:IR.d_off
+ir.d_l			:IR.d_l
+ir.mtrc_dbg			:dbg_mtrc [debug flag] - set mtrc debug log enable/disable
+ir.lpt			:lpt [ms] - set long press timeout
+ir.pto			:pto [ms] - set ir button up polling timeout
+ir.rx.list			:ir.rx.list - list Ir key id value
+ir.rx.send			:ir.rx.send [KeyId] - send key id into ir key queue
+ir.rx.init			:ir.rx.init -c [conf] -s [sap] -t [thld]
+ir.rx.stop			:ir.rx.stop
+ir.rx.pl			:ir.rx.printlog - print irrc log buffer history
+ir.rx.rl			:ir.rx.resetlog - reset irrc log buffer history
+rtc.d_on			:RTC.d_on
+rtc.d_off			:RTC.d_off
+rtc.d_l			:RTC.d_l
+rtc.i			:
+rtc.st			:
+rtc.gt			:
+rtc.sa			:
+rtc.sw			:
+rtc.ga			:
+aud.i			:Aud init
+aud.d_on			:AUD.d_on
+aud.d_off			:AUD.d_off
+aud.d_l			:AUD.d_l
+aud.s			:Aud set decoding type
+aud.resume			:Aud resume
+aud.pause			:Aud pause
+aud.play			:Aud play
+aud.stop			:Aud stop
+aud.dual			:dual
+aud.tridec			:tri_dec
+aud.sync			:Aud sync mode setting
+aud.str			:Playback stream src
+aud.q			:Audio status query
+aud.pll1			:Aud Pll1 setting
+aud.pll2			:Aud Pll2 setting
+aud.pllpd			:Aud Pll PoweDown
+aud.ip			:Check if audio decoder is playing
+aud.pd			:Set Parser debug flag
+aud.sb			:Watch sound bar register
+aud.setdelay			:Set Vdep Delay Tbl
+aud.speed			:mm playback speed test
+aud.dx			:debug setvolumeX 
+aud.praq			:print AQ varible 
+aud.prvc			:print volume cur 
+aud.qb			:query all audio buffer
+aud.m.v			:Mixsound Volume control
+aud.m.l			:Mixsound Loop control
+aud.m.q			:Mixsound status query
+aud.m.flag			:Mixsound flag
+aud.m.p			:Mixsound playback
+aud.m.str			:Select clip source
+aud.m.dec3			:Mixsound from Dec3
+aud.m.ch			:Set Mixsound channel
+aud.mclip.init			:Audio Mixsound Clip Init
+aud.mclip.set			:Audio Mixsound Clip Set
+aud.mclip.play			:Audio Mixsound Clip Play
+aud.mclip.stop			:Audio Mixsound Clip Stop
+aud.mclip.pause			:Audio Mixsound Clip Pause
+aud.mclip.resume			:Audio Mixsound Clip Resume
+aud.mclip.repeat			:Audio Mixsound Clip Repeat
+aud.mclip.q			:Audio Mixsound Clip Query
+aud.mclip.qdsp			:Audio Mixsound Clip Query(DSP)
+aud.mclip.ct			:Audio Mixsound Clip mixer path tone test
+aud.mclip.clr			:Audio MixSound Clip Clear
+aud.mclip.mute			:Audio MixSound Clip Mute
+aud.mclip.gain			:Audio MixSound Clip SetGain
+aud.mclip.mda			:Allocate memory for MixSnd Dump
+aud.mclip.mdr			:Reset MixSnd Dump
+aud.mclip.mds			:Set MixSnd Dump Location
+aud.dsp.p			:get AFIFO read/write pointer cmd ex. ptr
+aud.dsp.i			:adsp task init ex. init
+aud.dsp.pc			:Get dsp pc ex. pc
+aud.dsp.r			:Read DSP sram ex. reads [addr]
+aud.dsp.w			:Write DSP sram ex. write [addr] [data]
+aud.dsp.rpts			:update read ptr ex.rpts [DecId] [Addr]
+aud.dsp.sp			:set error log period ex.sp [second] 
+aud.dsp.sh			:read dsp share memory ex.sh [group] 
+aud.dsp.cm			:read dsp common memory ex.cm [addr] [length] 
+aud.dsp.cmw			:write dsp common memory ex.cm [addr] [value] 
+aud.dsp.norm			:read dsp normal dram
+aud.dsp.cmpt			:read dsp compact dram
+aud.dsp.q			:query dsp status
+aud.dsp.shw			:write dsp share memory ex.sh [group][addr][val][size] 
+aud.dsp.c			:dump channel ouput data
+aud.dsp.stcbd			:set stc difference bound
+aud.dsp.qmts			:query mts status
+aud.dsp.qvobs			:query vorbis status
+aud.dsp.pb			:pcm pre-buffer
+aud.dsp.cache			:DSP cache hit rate
+aud.dsp.id			:ROM ID
+aud.dsp.qm			:Query DSP Memory
+aud.dsp.v			:DSP Version Display
+aud.dsp.pat			:Pattern Test
+aud.dsp.patauto			:Pattern Auto
+aud.dsp.pats			:Pattern Single
+aud.dsp.qdly			:Query Channel Delay
+aud.dsp.dinfo			:DEBUG INFO ~~
+aud.dsp.cap			:Get DSP supported decoding format
+aud.dsp.int			:Dump Interrupt History
+aud.dsp.pr.p			:Probe: Pause
+aud.dsp.pr.st			:Probe: Step
+aud.dsp.pr.g			:Probe: Go
+aud.dsp.pr.r			:Probe: Read
+aud.dsp.pr.w			:Probe: Write
+aud.dsp.pr.sr			:Probe: Show Registers
+aud.dsp.pr.stb			:Probe: Setup BreakPoints
+aud.dsp.pr.sb			:Probe: Show BreakPoints
+aud.dsp.pr.sw			:Probe: Stop on Write
+aud.dsp.pr.gsr			:Probe: Go then Show
+aud.dsp.pr.stsr			:Probe: Go then Show
+aud.dsp.pr.sramtest			:Sram Test
+aud.dsp.pr.reset			:Reset DSP
+aud.dsp.ape.apeinit			:apeinit
+aud.dsp.ape.ps			:apeheaderparser
+aud.a.i			:aproc task init ex. init
+aud.a.pc			:Get aproc pc ex. pc
+aud.a.r			:Read aproc ex. reads [addr]
+aud.a.w			:Write aproc ex. write [addr] [data]
+aud.a.o			:command: open
+aud.a.nod			:command: notify adsp
+aud.a.wd			:command: write adsp
+aud.a.rr			:Reg read aproc ex. reads [addr]
+aud.a.rw			:Reg write aproc ex. write [addr] [data]
+aud.a.qm			:memory map query
+aud.a.enable			:enable/disable audio processor
+aud.a.ice			:connect ICE
+aud.a.modctrl			:module control
+aud.a.pon			:aproc power-on
+aud.a.pdown			:aproc power-down
+aud.a.ad			:post-processing AD mixing
+aud.a.q			:query aproc
+aud.a.ms			:Aproc MixSound Test
+aud.a.ks			:Aproc KeySound Test
+aud.a.up			:Aproc Upload Test
+aud.a.rp			:Aproc RiscPost Test
+aud.a.acmd			:Ask APROC AVSync Command
+aud.a.ld			:Print Log for which decoder
+aud.a.si			:List AVSync information
+aud.a.chs			:2.2/4.0 out select
+aud.a.am			:amixer mute setting
+aud.a.speed			:audio processor sound speed command
+aud.a.aq			:Test Flash AQ
+aud.a.key			:Test Flash AQ Key
+aud.a.amx.ao			:amixer open
+aud.a.amx.ac			:amixer close
+aud.a.iec.iecflag			:iec flag
+aud.a.iec.ieccs			:iec channel status
+aud.a.iec.iecpro			:iec copy protect
+aud.a.iec.iecraw			:iec raw information
+aud.a.iec.iecmute			:iec mute
+aud.a.iec.iecdelay			:iec RAW delay
+aud.a.iec.iecc			:iec PCM channel selection
+aud.a.iec.ieco			:iec output selection
+aud.a.iec.iecbit			:iec PCM output bits
+aud.a.vol.pv			:post-processing vol
+aud.a.vol.mv			:Master volume setting
+aud.a.vol.ipt			:Input trim setting
+aud.a.vol.opt			:Output trim setting
+aud.a.vol.apt			:Amixer trim setting
+aud.a.vol.opv			:Output trim setting
+aud.a.vol.sg			:post-processing smooth gain
+aud.a.se.avl			:AVL setting
+aud.a.se.pbt			:post-processing Bass Treble
+aud.a.se.blc			:Balancer setting
+aud.a.se.bmang			:Bass Managemant setting
+aud.a.se.mvs			:Virtual Surround Setting
+aud.a.se.mvb			:Virtual Bass setting
+aud.a.se.peq			:PEQ setting
+aud.a.se.peqr			:PEQ Rch setting
+aud.a.se.dl			:DRC limiter setting
+aud.a.se.eq			:8Band EQ setting
+aud.a.se.spec			:EQ spectrum enable
+aud.a.se.monomix			:post-processing Mono mixing
+aud.a.se.pq			:post-processing query
+aud.a.se.3drc			:3band DRC setting
+aud.a.se.1drc			:1band DRC setting
+aud.a.se.cdnotch			:CDNotch settting
+aud.a.se.hpf			:post-processing HPF
+aud.a.se.cp			:channel split
+aud.a.se.bq			:Biquad setting
+aud.a.srs.aeq			:SRS AEQ Setting
+aud.a.srs.bt			:SRS BassTreble Setting
+aud.a.srs.cc3d			:SRS CC3D Setting
+aud.a.srs.cshp			:SRS CSHP Setting
+aud.a.srs.geq			:SRS GEQ Setting
+aud.a.srs.hl			:SRS HardLimiter Setting
+aud.a.srs.hpf			:SRS HPF Setting
+aud.a.srs.mvol			:SRS Mvol Setting
+aud.a.srs.shpf			:SRS SpaceHpf Setting
+aud.a.srs.srs3d			:SRS SRS3D Setting
+aud.a.srs.ss3d			:SRS SS3D Setting
+aud.a.srs.tshd			:SRS STTSHD Setting
+aud.a.srs.tbhd			:SRS TBHD Setting
+aud.a.srs.trud			:SRS Trudialog Setting
+aud.a.srs.tvol			:SRS TvolHD Setting
+aud.a.srs.init			:Only for SRS Cert
+aud.a.srs.getall			:Only for Adjust
+aud.a.fade.fade			:Implement Fade Process
+aud.a.fade.p			:Implement Fade Process
+aud.a.fade.g			:Get current Fade volume
+aud.iec.flag			:iec flag
+aud.iec.cs			:iec channel status
+aud.iec.protect			:iec copy protect
+aud.iec.raw			:iec raw information
+aud.iec.audraw			:iec raw information by audio format
+aud.iec.mute			:iec mute
+aud.iec.delay			:iec RAW delay
+aud.iec.ch			:iec PCM channel selection
+aud.iec.out			:iec output selection
+aud.iec.bit			:iec PCM output bits
+aud.spost.dbg			:Spost debug
+aud.spost.b			:bypass all post
+aud.spost.lo			:Enable Log out
+aud.cdec.ver			:DTS decoder set parameter
+aud.cdec.q			:DTS decoder set parameter
+aud.cdec.dtss			:DTS decoder set parameter
+aud.cdec.d			:DTS Debug
+aud.uop.qv			:DSP volume system setting
+aud.uop.fv			:Audio Master Volume fine control
+aud.uop.v			:Audio Volume control
+aud.uop.vc			:Audio Volume Curve Set
+aud.uop.vcq			:Audio Volume Curve Query
+aud.uop.svt			:Audio Volume table set 
+aud.uop.fcv			:Audio Channel Volume fine control
+aud.uop.cv			:Audio Channel Volume control
+aud.uop.cvg			:Audio Channel Volume Gain control
+aud.uop.vo			:Audio Channel Volume offset
+aud.uop.sv			:Audio Source Volume control
+aud.uop.svq			:Query Audio Source Volume
+aud.uop.a			:Automatic Volume Control
+aud.uop.drc			:DRC
+aud.uop.md			:Downmix to mono
+aud.uop.kr			:Karaoke mix ratio
+aud.uop.bl			:Set L/R balance
+aud.uop.vs			:Virtual Surround flag
+aud.uop.vscfg			:Virtual Surround Config
+aud.uop.peq			:Set PEQ
+aud.uop.peqc			:Set PEQ Configuration
+aud.uop.peqc2			:Set PEQ Configuration
+aud.uop.peqcr			:Set PEQ Configuration
+aud.uop.peqc2r			:Set PEQ Configuration
+aud.uop.vb			:Set Virtual Bass
+aud.uop.vbcfg			:Set Virtual Bass config
+aud.uop.vbcut			:Set Virtual Bass Cutoff
+aud.uop.speed			:DSP Speed
+aud.uop.dmp			:Downmix channel position
+aud.uop.MultiPair			:Multi-Pair output
+aud.uop.LRDMix			:LR DownMix
+aud.uop.dump			:DSP Dump
+aud.uop.DDCO			:DDCO setting
+aud.uop.DDCOAgc			:DDCO AGC setting
+aud.uop.DDCOLFE			:DDCO AGC setting
+aud.uop.dm			:dual-mono steup
+aud.uop.eac3			:E-ac3 raw enable
+aud.uop.up			:Upload data enable
+aud.uop.upi			:Upload data init
+aud.uop.upd			:Upload data dump
+aud.uop.enc			:Set Encode mode
+aud.uop.adupdate			:ad fade pan update setup
+aud.uop.adfade			:ad fade setup
+aud.uop.adpan			:ad pan setup
+aud.uop.adpanfaden			:ad pan fade enable
+aud.uop.sbcd			:SBC Encode Test
+aud.uop.adcd			:SBC Encode Test
+aud.uop.pq			:Post-Proc Query
+aud.uop.g726dec			:G726 decoder setting
+aud.uop.csum			:check sum _pbD
+aud.uop.eq.flag			:EQ function on/off
+aud.uop.eq.m			:EQ mode configuration
+aud.uop.eq.set			:Set EQ Table
+aud.uop.eq.q			:Query EQ Table
+aud.uop.sbass.flag			:sbass function on/off
+aud.uop.sbass.cf			:Bass Treble cut-off freq
+aud.uop.sbass.bb			:Bass boost gain configuration
+aud.uop.sbass.cb			:Clear boost gain configuration
+aud.uop.sbass.q			:query sbass Table
+aud.uop.limiter.flag			:individual limiter flag
+aud.uop.limiter.thre			:limiter fixed mode threshold
+aud.uop.limiter.release			:limiter release rate
+aud.uop.limiter.q			:query limiter configuration
+aud.uop.pl2cfg.i			:initialization for prologic2
+aud.uop.pl2cfg.sw			:prologic2 On/Off/Auto switch
+aud.uop.pl2cfg.mode			:setup prologic2 mode        
+aud.uop.pl2cfg.pano			:panorama on/off             
+aud.uop.pl2cfg.dim			:dimension control           
+aud.uop.pl2cfg.cw			:center width control        
+aud.uop.spkuop.spkcfg			:speaker config steup
+aud.uop.spkuop.delaycfg			:channel delay steup
+aud.uop.spkuop.ls			:speaker large/small config
+aud.uop.spkuop.cf			:set cutoff frequency
+aud.uop.spkuop.ch			:speaker config
+aud.uop.spkuop.sw			:subwoofer on/off
+aud.uop.spkuop.bs			:bass management on/off
+aud.uop.spkuop.dm			:auto downmix on/off
+aud.uop.cdnotch.flag			:CDNotch enable
+aud.uop.cdnotch.cfg			:CDNotch Q and Fc setup
+aud.uop.ms12.en			:Enable MS12 Modules
+aud.uop.ms12.bp			:Bypass Post Processing
+aud.uop.ms12.upload			:Enable Upload data to USB
+aud.uop.ms12.outsel			:Select Output buffer input source
+aud.uop.ms12.hpsel			:Select HP buffer input source
+aud.uop.ms12.iecsel			:Select IEC buffer input source
+aud.uop.ms12.optctrl			:Option Control Enable
+aud.uop.ms12.srcuplpf			:Enable SRC Upsample LPF
+aud.uop.ms12.mixer.assoc			:Assoc Present
+aud.uop.ms12.mixer.dmx			:Singel has been downmixed
+aud.uop.ms12.mixer.upref			:User Preference
+aud.uop.ms12.mixer.outsel			:Output Buffer Selector
+aud.uop.ms12.pcmr.ddrc			:Discard DRC Enable/Disable
+aud.uop.ms12.pcmr.drccut			:DRC Cut scale factor
+aud.uop.ms12.pcmr.drcboost			:DRC Boost scale factor
+aud.uop.ms12.pcmr.drcmode			:DRC Mode
+aud.uop.ms12.pcmr.dmxmode			:DMX Mode
+aud.uop.ms12.pcmr.dualmode			:DUAL Mode
+aud.uop.ms12.pcmr.outact			:Output Active
+aud.uop.ms12.pcmr.enproc			:Enable Processing
+aud.uop.ms12.pcmr.cprof			:Compressor Profile
+aud.uop.ms12.pcmr.delay			:Delay between rendered and unrendererd
+aud.uop.ms12.pcmr.loudness			:Loudness Level Adjust
+aud.uop.ms12.pcmr.lfedmx			:LFE Downmix
+aud.uop.ms12.ddpenc.banner			:Display Banner
+aud.uop.ms12.ddpenc.datarate			:Set Data Rate
+aud.uop.ms12.ddpenc.enfilter			:Enable Filter
+aud.uop.ms12.ddpenc.riscenc			:Aproc RiscEnc Test
+aud.uop.ms12.ddpenc.unsup			:Unsupported Acmod and Lfe
+aud.uop.ms12.aac.dn			:Default Dialnorm
+aud.uop.ms12.ac3.mdctbl			:MDCT BandLimit
+aud.t.t			:play tone
+aud.t.stop			:stop tone
+aud.t.utone			:play universal tone
+aud.t.s			:sound effect on/off
+aud.t.b			:bypass post processing
+aud.t.banner			:DD banner turn on for DD Test
+aud.t.mal			:Allocate memory for test
+aud.t.aoutg			:Aout gain control
+aud.Clip.p			:play aud clip
+aud.Clip.s			:stop aud clip
+aud.Clip.v			:set clip volume
+aud.atv.q			:query ATV audio informantion
+aud.atv.sys			:Tv channel system: B/G, D/K, I, L, M
+aud.atv.sm			:ATV Sound Mode: mono, stereo, dual,...
+aud.atv.mts			:BTSC system factory options
+aud.atv.a2			:A2 system factory options
+aud.atv.pal			:PAL system factory options
+aud.atv.CFO			:Query MTS Carrier Shift
+aud.atv.qovm			:query ATV Hdev detection result
+aud.dtv.q			:Query DTV decoder informantion
+aud.dtv.ptsd			:Delay audio startup by increasing PTS
+aud.dtv.dls			:Query Supported Dolby License
+aud.dtv.c			:Query Target Country
+aud.dtv.ac3.ac3ka			:ac3 karaoke mode steup
+aud.dtv.ac3.ac3dm			:ac3 dual mono mode steup
+aud.dtv.ac3.ac3cm			:ac3 compresssion mode steup
+aud.dtv.ac3.ac3dr			:ac3 drc range  steup
+aud.dtv.ac3.q			:ac3 query decoder status
+aud.dtv.ddc.ddc			:DDC control steup
+aud.dtv.ddc.id			:DDC associated stream id steup
+aud.dtv.ddc.m			:DDC mixer steup
+aud.dtv.ddt.mdc			:DDT bypass mode
+aud.dtv.ddt.dmx			:DDT downmix mode
+aud.dtv.ddt.rf			:DDC RF/Line in mode
+aud.dtv.ddt.dual			:DDC dual mode
+aud.dtv.ddt.drc			:DDC DRC Cut/Boost factor
+aud.fmrdo.det			:Detect FM radio channel
+aud.fmrdo.play			:Play FM radio channel
+aud.fmrdo.fm2			:Setup FM radio channel
+aud.fmrdo.fmthl			:Setup FM radio threshold
+aud.fmrdo.fmthlq			:Query FM radio threshold
+aud.fmrdo.vol			:Fine tune volume
+aud.fmrdo.en			:Enable FM detect Notify
+aud.io.spdif.i			:Spdif-in init
+aud.io.spdif.reset			:Spdif-in reset
+aud.io.spdif.e			:Spdif-in enalbe
+aud.io.spdif.d			:Spdif-in diable
+aud.io.spdif.c			:Spdif-in check locked?
+aud.io.spdif.s			:Spdif-in select channel
+aud.io.spdif.r			:Spdif-in read registers ex. readrg
+aud.io.spdif.w			:Spdif-in write registers ex. writerg [addr] [value]
+aud.io.spdif.iecs			:IEC setting [decoder id] [flag] [enable]
+aud.io.spdif.iecc			:IEC Channel setting [decoder id] [channel]
+aud.io.spdif.iecb			:IEC output HDMI always [enable]
+aud.io.spdif.iecq			:IEC setting query
+aud.io.spdif.flag			:IEC RAW delay sync with channel delay control
+aud.io.spdif.delay			:IEC RAW delay
+aud.io.spdif.info			:SPDIF get setup
+aud.io.spdif.resetreg			:SPDIF reset registers
+aud.io.spdif.cpy			:SPDIF copyright setup
+aud.io.spdif.code			:SPDIF category code setup
+aud.io.spdif.word			:SPDIF word length setup
+aud.io.spdif.set			:SPDIF information setup
+aud.io.spdif.protect			:SPDIF copy protect setup
+aud.io.spdif.mode			:SPDIF set update mode
+aud.io.spdif.cs			:SPDIF get channel status
+aud.io.adac.q			:Query speaker enable state
+aud.io.adac.f			:Data format ex. format 0 1
+aud.io.adac.d			:Data invert ex.  datainvert 0 1
+aud.io.adac.drv			:Select MCLK BCLK driving current ex. drv 0 8 8
+aud.io.adac.cr			:WM8776/MT8291 register read
+aud.io.adac.cw			:WM8776/MT8291 register write
+aud.io.adac.ch			:WM8776/MT8291 register write
+aud.io.adac.ar			:Amplifier register read
+aud.io.adac.aw			:Amplifier register write
+aud.io.adac.ai			:Amplifier init
+aud.io.adac.am			:Amplifier mute control
+aud.io.adac.ani			:Amplifier nvm init
+aud.io.idac.ch			:Internal DAC channel Select
+aud.io.idac.m			:Internal DAC Mute
+aud.io.idac.e			:Internal DAC Enable
+aud.io.idac.i			:Internal DAC Init
+aud.io.idac.inv			:Internal LR invert
+aud.io.idac.pwmen			:PWM enable OR disable
+aud.io.idac.pg			:Set PWM gain
+aud.io.idac.mt			:Set Moniter Status
+aud.io.idac.pd			:Set PWM Delay
+aud.io.idac.pwmr			:PWMDAC Y YRAM Read
+aud.io.idac.pwmw			:PWMDAC Y YRAM Write
+aud.io.idac.dacr			:PWMDAC Read
+aud.io.idac.dacw			:PWMDAC Write
+aud.io.idac.pwmsg			:PWMSigGen
+aud.io.idac.ldo			:internal LDO Enable OR disable
+aud.io.aadc.m			:AADC Mute PGA
+aud.io.aadc.pd			:AADC power down
+aud.io.aadc.gain			:AADC power down
+aud.io.cfg.isw			:Av input component select
+aud.io.cfg.osw			:Out channel switch
+aud.nvm.r			:Read  NVM
+aud.nvm.w			:Write NVM
+aud.nvm.init			:Initialize NVM
+aud.nvm.pfr			:Profile Read
+aud.nvm.l			:AQ list all data on flash
+aud.nvm.aq			:AQ Read Idx
+aud.src.q			:Query ASRC status
+aud.src.t			:Enable ASRC Tracking Mode
+aud.dram.qm			:Query AUD Dram Map
+aud.dram.dm			:dump dsp memory
+aud.dram.r			:Read physical memory in bytes
+aud.dram.r4			:Read physical memory in dwrds
+aud.dram.phy			:Virtual to Physical convert
+aud.dram.vir			:Physical to Virtual convert
+aud.dram.sh			:read dsp share memory: sh [group]
+aud.dram.shw			:write dsp share memory: sh [group] [addr] [val] [size]
+aud.dram.cm			:read dsp common memory: cm [addr] [length]
+aud.dram.cmw			:write dsp common memory: cm [addr] [value]
+aud.dram.norm			:read dsp normal dram
+aud.dram.cmpt			:read dsp compact dram
+aud.dram.c			:dump channel ouput data
+aud.dram.flush			:Flush DSP memory
+aud.dram.dump			:dump Fifo data to file
+aud.dram.ul			:Upload file data to dram
+aud.dram.mal			:Allocate Dram
+aud.dram.dumpLoop			:dump Fifo data to file infinitely
+aud.dram.dumpStop			:stop dumpLoop
+aud.dram.dumpAS			:Set dumpLoop auto save to a new file
+aud.adecomx.dm			:Set Debug Mask
+aud.adecomx.q			:Query
+aud.sd.d			:Set AV Sync Debug On/Off
+aud.sd.sid			:Set Audio STC ID
+aud.sd.qq			:Query PTS Queue
+aud.sd.qpts			:Query PTS Info
+aud.db.q			:query Dolby related information
+aud.db.impulse			:generate impluse signal
+aud.db.t			:generate tone
+aud.pm.c			:Clear history
+aud.pm.q			:Query history
+aud.pm.qd			:Query delay
+aud.pm.e			:Enable play mute control
+aud.util.dls			:Dump log on/off set
+aud.util.dlq			:Dump log on/off query
+aud.util.lbs			:Log bits set
+aud.util.lbq			:Log bits query
+n.i			:Initialize Nptv
+n.ms			:Main Source Select
+n.ps			:Pip Source Select
+n.ns			:3rd path Source Select
+n.fw			:Nptv fimware on/off
+n.fixcs			:Fix color space
+n.scan			:Set Scan Mode
+n.demo			:Set Demo Mode
+n.d_on			:NPTV.d_on
+n.d_off			:NPTV.d_off
+n.d_l			:NPTV.d_l
+n.fw_upgrade			:Firmware Upgrade
+n.ss			:NPTV Status
+n.d			:Cmd delay for automation
+n.p			:Print String
+n.sfir			:Set H FIR PreDown
+n.gfir			:Get H FIR PreDown
+n.srs			:Config SRS
+n.slt_vdo			:slt vdo_path_check
+n.vdo.q			:Video Query
+n.vdo.dly			:Video Delay
+n.vdo.modchg			:Video Mode Change Done
+n.vdo.dram			:Video DRAM Status Monitor
+n.vdo.swi			:Initialize Software Register
+n.vdo.swr			:Read Software Register
+n.vdo.sww			:Write Software Register
+n.css.i			:CSS Initial
+n.css.comp			:CSS Compensate
+n.css.onoff			:CSS On/Off
+n.3d.pk			:3D packing Mode
+n.3d.322			:3D to 2D
+n.3d.fpr			:FPR Mode
+n.3d.q			:Config Query
+n.3d.navi			:3D Navigation
+n.3d.lrs			:Set L/R Indicator switch
+n.3d.ns			:Navi Stress test
+n.3d.sp3d			:Panel 3d Setting
+n.3d.s3dptn			:set 3d pattern
+n.3d.ttd.fw			:Set TTD Adap FW
+n.3d.tddc.i			:Init TDDC
+n.3d.tddc.fw			:Set TDDC Adap FW
+n.vrm.i			:VRM init
+n.vrm.u			:VRM update
+n.vrm.g			:VRM get
+n.vrm.d			:VRM dump
+n.vrm.dly			:Set Import Delay
+n.vrm.sim			:Set Import Module
+n.vrm.gis			:Get Import Status
+n.vrm.t			:Trigger manually
+n.vrm.fom			:Set Forced overscan module
+n.vrm.gom			:Get overscan module
+n.vrm.appset			:Set application mode
+n.vrm.appget			:Get application mode
+n.vrm.appclr			:Clr application mode
+n.vrm.d_on			:SCPOS.d_on
+n.vrm.d_off			:SCPOS.d_off
+n.vrm.d_l			:SCPOS.d_l
+n.scl.selfi			:Scalar input Pattern self gen
+n.scl.sci			:Scalar input Pattern
+n.scl.sco			:Scalar output Pattern
+n.scl.ftt			:Set Frame Track TARGET value
+n.scl.ftlr			:Set Frame Track Base On L or R
+n.scl.hpos			:Set H Porch
+n.scl.vpos			:Set V Porch
+n.scl.pipsel			:PIP source select
+n.scl.tvesel			:TVE source select
+n.scl.d_on			:SCPOS.d_on
+n.scl.d_off			:SCPOS.d_off
+n.scl.d_l			:SCPOS.d_l
+n.scl.ipoo			:Nptv Import Protection on/off
+n.scl.fover			:Check scaler dram fifo overflow status
+n.scl.q			:Query scaler status
+n.scl.mir			:Set Scaler Mirror in H dir on/off
+n.scl.flip			:Set Scaler Flip in V dir on/off
+n.scl.mf			:Set Scaler Mirror and Flip in both H/V for main and sub
+n.scl.3dio			:Set 3D input/ output format
+n.scl.3dres			:Set 3D pre/pst resolution
+n.scl.aut			:Auto check
+n.scl.srcrut			:Source Region UT
+n.scl.outrut			:Output Region UT
+n.scl.poll			:Read Status
+n.scl.coef			:Set Scaling Coef
+n.scl.f4			:Forced Input 444/422 mode
+n.scl.fsm			:Forced 444/422 scaling mode
+n.scl.fdf			:Force dram 444/422 write format
+n.scl.fdm			:Force front/back dram mode
+n.scl.fvs			:Force V FIR/Partial sum scaling
+n.scl.gvs			:Get V FIR/Partial sum scaling
+n.scl.crcs			:Enable scaler CRC
+n.scl.crcq			:Query scaler CRC status
+n.scl.isrs			:Enable scaler ISR
+n.scl.isrc			:Clear scaler ISR status
+n.scl.isrq			:Query scaler ISR status
+n.scl.isrt			:Test scaler ISR frame rate
+n.scl.addr			:Force scaler dram address
+n.gfx.i			:Initialization
+n.gfx.src			:Select dump path(0:main, 1:sub)
+n.gfx.res			:Update resolution(width, height)
+n.gfx.fn			:Set frame number(1~4)
+n.gfx.add			:Set dram address, frame size, frame number
+n.gfx.wm			:Set dram write mode(0: continue, 1:trigger)
+n.gfx.t			:Trigger dram write 1 frame
+n.gfx.wen			:Switch dram write OnOff
+n.gfx.32			:Enable 3D to 2D
+n.gfx.fd			:Input frame drop N/M
+n.gfx.f			:Set dump format(0:RGBA888, 1:RGB565)
+n.gfx.a			:Set alpha value(0~127)
+n.gfx.d			:gfx dump setting
+n.gfx.q			:Query dump status
+n.gfx.d_on			:GFX.d_on
+n.gfx.d_off			:GFX.d_off
+n.gfx.d_l			:GFX.d_l
+n.ft.q			:Query frame track status
+n.ft.fftm			:force frame track mode
+n.ft.ffoo			:force frame track on/off
+n.venc.i			:Initialization
+n.venc.em			:ScpipVenc Mux select
+n.venc.ef			:ScpipVenc Fld Mode
+n.venc.input			:Select input path (0:main, 1:sub)
+n.venc.src			:Select dump path (0:main, 1:sub, 2: mon_out)
+n.venc.res			:Update resolution(width, height, scan)
+n.venc.add			:Set dram address, frame size, frame number
+n.venc.wm			:Set dram write mode(0: continue, 1:trigger)
+n.venc.t			:Trigger dram write 1 frame
+n.venc.wen			:Switch dram write OnOff
+n.venc.fd			:Input frame drop N/M
+n.venc.dd			:dump scaler dram one
+n.venc.pi			:field pair invert
+n.venc.ai			:address invert
+n.venc.q			:Query dump status
+n.venc.d_on			:VENC.d_on
+n.venc.d_off			:VENC.d_off
+n.venc.d_l			:VENC.d_l
+n.dec.gt			:Query current decoder type
+n.dec.q			:Query decoder information
+n.dec.tmd			:Trigger Mode Detection
+n.dec.w			:Get Current Video Width
+n.dec.h			:Get Current Video Heigth
+n.dec.fr			:Get Current Frame Rate
+n.dec.i			:Query whether current input source is interlaced
+n.dec.vp			:Get Current VPorch
+n.dec.hp			:Get Current HPorch
+n.dec.ss			:Get Current Signal Status
+n.dec.vt			:Get VTotal
+n.dec.ht			:Get HTotal
+n.dec.t			:Get Timing
+n.dec.isvga			:check if it is vga timing
+n.dec.dmc			:set decoder mode change
+n.hdmi2.d_on			:HDMI.d_on
+n.hdmi2.d_off			:HDMI.d_off
+n.hdmi2.d_l			:HDMI.d_l
+n.hdmi2.i			:HDMI initialization
+n.hdmi2.m			:HDMI mainloop
+n.hdmi2.dmsg			:HDMI mainloop
+n.hdmi2.stop			:HDMI mainloop
+n.hdmi2.resume			:HDMI mainloop
+n.hdmi2.set			:HDMI mainloop
+n.hdmi2.ss			:HDMI set switch
+n.hdmi2.acom.i			:HDMI analog initialization
+n.hdmi2.acom.s			:HDMI analog setting
+n.hdmi2.acom.reset			:HDMI analog reset (0:Data,1:EQALG,2:SAOSC,3:EQOSC,4:CDR,5:LEQ,6:EQ_Increase,7:Adjust) is40xMode
+n.hdmi2.acom.scm			:HDMI analog set con monitor
+n.hdmi2.acom.gcs			:HDMI analog get CDR status
+n.hdmi2.acom.gam			:HDMI analog get alg monitor status
+n.hdmi2.acom.feq			:HDMI analog fix LEQ
+n.hdmi2.acom.seq			:HDMI analog scan LEQ
+n.hdmi2.acom.geq			:HDMI analog get EQ control
+n.hdmi2.acom.dbg			:HDMI analog do debug
+n.hdmi2.acom.dbglog			:HDMI analog log debug status
+n.hdmi2.acom.delay			:HDMI analog set delay
+n.hdmi2.acom.rstb			:HDMI analog set reset bit
+n.hdmi2.acom.crc			:HDMI analog set delay
+n.hdmi2.acom.gas			:HDMI analog get all status
+n.hdmi2.acom.sa			:HDMI analog set all
+n.hdmi2.acom.ta			:HDMI analog test all(set & get status)
+n.hdmi2.acom.oc			:HDMI analog offset cal check
+n.hdmi2.acom.fo			:HDMI analog optional function sel
+n.hdmi2.acom.ct			:HDMI analog con test)
+n.hdmi2.acom.clks			:Select clock source from HDMI
+n.hdmi2.acom.termc			:Termination control
+n.hdmi2.dcom.i			:HDMI digital initialization
+n.hdmi2.dcom.hdcp2			:HDMI HDCP2 initialization
+n.hdmi2.dcom.sel			:HDMI DDC Select
+n.hdmi2.dcom.scrm			:HDMI Scrambling setting
+n.hdmi2.dcom.slt			:HDMI split setting
+n.hdmi2.dcom.420			:HDMI 420 set
+n.hdmi2.dcom.c			:HDMI CRC check
+n.hdmi2.dcom.mcrc			:HDMI Multi CRC check
+n.hdmi2.dcom.ddc			:HDMI DDC set
+n.hdmi2.dcom.hpd			:HDMI hpd set
+n.hdmi2.dcom.clk			:HDMI 2.0 port clock set
+n.hdmi2.dcom.dig			:HDMI 2.0 new digital select
+n.hdmi2.dcom.dyrst			:HDMI digital phy reset
+n.hdmi2.dcom.deeprst			:HDMI deep color reset
+n.hdmi2.dcom.fiforst			:HDMI fifo reset
+n.hdmi2.dcom.hdcp1rst			:HDMI hdcp1 reset
+n.hdmi2.dcom.hdcp2rst			:HDMI hdcp2 reset
+n.hdmi2.dcom.apll			:HDMI apll reset
+n.hdmi2.dcom.dpll			:HDMI dpll reset
+n.hdmi2.dcom.gcr			:HDMI get tmds clock rate
+n.hdmi2.dcom.gvs			:HDMI video format
+n.hdmi2.dcom.gas			:HDMI audio format
+n.hdmi2.dcom.ghdcp14			:HDMI get HDCP1.4 status
+n.hdmi2.dcom.ghdcp22			:HDMI get HDCP2.2 status
+n.hdmi2.dcom.ginfo			:HDMI get infoframe infomation
+n.hdmi2.dcom.g5v			:HDMI get 5v status
+n.hdmi2.dcom.tinfo			:Test get infoframe
+n.hdmi2.dcom.hdr			:Debug get hdr info
+n.hdmi2.dcom.hdcp2plugin			:HDMI HDCP2 downstream Device Plug In
+n.hdmi2.dcom.hdcp2plugoff			:HDMI HDCP2 downstream Device Plug Off
+n.hdmi2.dcom.hdcp2info			:HDMI set HDCP2 downstream Device info
+n.mhl.d_on			:MHL.d_on
+n.mhl.d_off			:MHL.d_off
+n.mhl.d_l			:MHL.d_l
+n.mhl.i			:MHL initialization
+n.mhl.stop			:MHL initialization
+n.mhl.autosend			:En/Disable cbus command auto send 
+n.mhl.acom.m2mpcfg			:MHL2 main pll cfg
+n.mhl.acom.dpcfg			:MHL2 deep pll cfg
+n.mhl.acom.m3mpcfg			:MHL3 main pll cfg
+n.mhl.acom.ei			:MHL3 eCBUS init
+n.mhl.acom.enpd			:enable FPLL post div RG
+n.mhl.acom.dpen			:MHL2 deep pll en
+n.mhl.acom.m3mpen			:MHL3 main pll en
+n.mhl.acom.fpe			:MHL3 fpll en
+n.mhl.acom.ecpen			:eCBUS PLL en
+n.mhl.acom.ecen			:eCBUS en
+n.mhl.acom.eq			:MHL3 EQ BAND set
+n.mhl.acom.m3as			:MHL3 analog setting
+n.mhl.acom.m3sa			:MHL3 analog all setting
+n.mhl.acom.monck			:Calibrate PLL clock
+n.mhl.acom.m2as			:MHL2 analog setting
+n.mhl.acom.m2sa			:MHL2 analog all setting
+n.mhl.acom.fixpdiv			:adjust FPLL post divider
+n.mhl.acom.termctrl			:TMDS termination ctrl
+n.mhl.acom.clksrc			:select main pll clock source
+n.mhl.acom.ecterm			:ecbus termination and current ctrl
+n.mhl.acom.dacmon			:ecbus dac voltage monitor
+n.mhl.acom.dacmoni			:ecbus dac voltage monitor init
+n.mhl.acom.gdd			:get dac capatured data
+n.mhl.dcom.ex1k			:MHL external 1K setting
+n.mhl.dcom.hw			:MHL external 1K setting
+n.mhl.dcom.imp			:MHL impedance setting
+n.mhl.dcom.sta			:Get oCBUS/eCBus status
+n.mhl.dcom.send			:Send Cbus command
+n.mhl.dcom.ecbus			:Send Cbus command
+n.mhl.dcom.avlink			:Send Cbus command
+n.mhl.dcom.m2hrst			:Send Cbus command
+n.mhl.dcom.port			:Send Cbus command
+n.mhl.dcom.fpll			:Send Cbus command
+n.mhl.dcom.fsta			:Send Cbus command
+n.mhl.dcom.adjust			:Send Cbus command
+n.mhl.dcom.bist			:Send Cbus command
+n.mhl.dcom.gdc			:Get source dev cap reg
+n.mhl.dcom.fcc			:Set force cbus connect
+n.mhl.dcom.cedid			:change MHL edid
+n.mhl.dcom.dbg			:For MHL3 debug
+n.hv.pg			:porch get
+n.hv.ps			:porch set
+n.dvi2.d_on			:DVI.d_on
+n.dvi2.d_off			:DVI.d_off
+n.dvi2.d_l			:DVI.d_l
+n.dvi2.c			:DVI connect
+n.dvi2.i			:DVI initial
+n.dvi2.mcg			:DVI mode change
+n.dvi2.mdn			:DVI mode done
+n.dvi2.gs			:CCIR get status
+n.dvi2.dmsg			:CCIR get status
+n.dvi2.sas			:CCIR set av start
+n.dvi2.gas			:CCIR get av start
+n.dvi2.saw			:CCIR set av width
+n.dvi2.gaw			:CCIR get av width
+n.dvi2.svs			:CCIR set vs start
+n.dvi2.gvs			:CCIR get vs start
+n.dvi2.svw			:CCIR set vs width
+n.dvi2.gvw			:CCIR get vs width
+n.ycproc.vcs			:Set VGA Color Space Mode
+n.ycproc.hcs			:Set HDMI Color Space Mode
+n.ycproc.contr			:Set Contrast
+n.ycproc.brit			:Set Brightness
+n.ycproc.hue			:Set Hue
+n.ycproc.satr			:Set Saturation
+n.ycproc.sce			:Enable/disable SCE
+n.ycproc.scelvl			:Set SCE Level
+n.ycproc.skin			:Set SCE Skin Level
+n.ycproc.asce			:Set SCE Angular
+n.ycproc.oscap			:Get OSTG captured result
+n.ycproc.sceidx			:Update SCE Table by Using Function and Index
+n.ycproc.scepat			:SCE Pattern Generator
+n.ycproc.cti			:Enable/disable CTI
+n.ycproc.gamma			:Select gamma mode
+n.ycproc.gmc			:Select gamma Compensation
+n.ycproc.gain			:Select R/G/B gain
+n.ycproc.ofst			:Select R/G/B offset
+n.ycproc.sharp			:Enable/disable sharpness
+n.ycproc.sharppat			:Sharpness Pattern Generator
+n.ycproc.cla			:Chroma Line Average
+n.ycproc.pqv			:PQ verify
+n.ycproc.ver			:PQ ver
+n.ycproc.pid			:Get Panel ID
+n.ycproc.sp			:Set Qty Dft tbl
+n.ycproc.qdft			:Set Qty Dft tbl
+n.ycproc.qmm			:Set Qty Min/Max tbl
+n.ycproc.mute			:Mute
+n.ycproc.unmute			:Mute
+n.ycproc.osm			:Enable/disable Output Stage Matrix
+n.ycproc.pre			:Enable/Disable Pre-Proc
+n.ycproc.post			:Enable/Disable Post-Proc
+n.ycproc.os			:Enable/Disable Output Stage
+n.ycproc.demo			:Enable/Disable Demo function
+n.ycproc.ui			:Enable/Disable PE UI Debug Message
+n.ycproc.al.lhist			:Get luma histogram
+n.ycproc.al.lhistlr			:Get LR luma histogram
+n.ycproc.al.lapllr			:Get LR luma APL
+n.ycproc.al.linfo			:Get luma infomation
+n.ycproc.al.shist			:Get Sat histogram
+n.ycproc.al.hhist			:Get Hue histogram
+n.ycproc.al.rgbmax			:Get RGBMAX
+n.ycproc.al.dist			:Get Distribution
+n.ycproc.al.s			:Set ON OFF
+n.ycproc.al.sal			:Set Adaptive Luma Param
+n.ycproc.al.sbs			:Set Black Stretch Param
+n.ycproc.al.sws			:Set White Stretch Param
+n.ycproc.al.g			:Get Info
+n.ycproc.lcdim.i			:Init local dimming quality
+n.ycproc.lcdim.p			:Set panel info
+n.ycproc.lcdim.dp			:Set Demo Param
+n.ycproc.lcdim.on			:Set LcDim OnOff
+n.ycproc.lcdim.co			:Check LcDim OnOff
+n.ycproc.lcdim.c			:Get block content info
+n.ycproc.lcdim.demo			:Set Demo Demo
+n.ycproc.lcdim.gdim			:Get Dim Tbl
+n.ycproc.lcdim.sdim			:Set Dim Tbl
+n.ycproc.lcdim.ggain			:Get Gain Tbl
+n.ycproc.lcdim.sgain			:Set Gain Tbl
+n.ycproc.lcdim.si			:SPI Init
+n.ycproc.lcdim.rw			:SPI Init
+n.ycproc.lcdim.ss			:SPI Set Command
+n.ycproc.lcdim.gi			:SPI Get Info
+n.ycproc.lcdim.loop			:SPI Loop OnOff
+n.ycproc.lcdim.hd			:SPI Set Header
+n.ycproc.ab.log			:Enable/disable LOG
+n.ycproc.ab.info			:Get Dimming Info
+n.ycproc.ab.ls			:Set light sensor value
+n.ycproc.ab.lvl			:Set level
+n.ycproc.ab.pre			:Preset curve
+n.ycproc.ab.dim			:Set Dimmer
+n.ycproc.ab.boost			:Set Booster
+n.ycproc.ab.lock			:Set Pwm lock
+n.ycproc.amb.i			:Init
+n.ycproc.amb.p			:Print
+n.ycproc.amb.pblk			:Print
+n.ycproc.dump.start			:Start Dump
+n.ycproc.dump.mode			:Set Continuous Mode
+n.ycproc.dump.waddr			:Force DRAM Address
+n.di.sbr			:Set bit resolution
+n.di.fwoo			:Enable/disable MDDi FW
+n.di.oo			:Enable/disable MDDi/DRAM controller
+n.di.i			:Initialize MDDi register values
+n.di.dp			:Set demo mode active region
+n.di.tmoo			:Turn on/off trick mode
+n.di.scm			:Switch between 420/422 color mode
+n.di.p			:DI QTY Status Polling
+n.di.ink			:Set Ink
+n.di.se			:DI Set Event
+n.di.pst			:H&VPS test
+n.di.pdt			:Auto predown test
+n.di.sddm			:Set debug data mode
+n.di.g			:Get PSCAN debug Information
+n.di.osd			:Set PSCAN ink control
+n.di.smid			:Set PSCAN Dram Agent
+n.di.f			:Set PSCAN Freeze
+n.di.sfld			:Set Field Inverse
+n.di.srbit			:Force Read Precision Selection
+n.di.swbit			:Write Precision Selection
+n.di.spt			:Set Porch test
+n.di.la			:Log Register access
+n.di.logall			:Log all information
+n.di.ptgn			:Set output pattern
+n.di.iptg			:Set input pattern
+n.di.fm			:Set flip mirror mode
+n.di.crclog			:crc
+n.di.crcint			:crc
+n.di.crc			:Initialize crc test
+n.di.chksta			:chksta
+n.di.clrsta			:clrsta
+n.di.sspr			:Set Status Polling Register
+n.di.sp			:Polling Status
+n.di.d_on			:DI.d_on
+n.di.d_off			:DI.d_off
+n.di.d_l			:DI.d_l
+n.pre3d.tdnink			:Set 3D Navi Ink Mode
+n.pre3d.tdninfw			:Set 3D Navi In FW Parameter
+n.pre3d.tdnoutfw			:Set 3D Navi Out FW Parameter
+n.pre3d.tdnfw			:Set 3D Navi Adapt On/Off
+n.pre3d.rdifc			:Set RealD In FrmThr
+n.pre3d.rdofc			:Set RealD Out FrmThr
+n.pre3d.rdiqr			:Set RealD In QuaRatio
+n.pre3d.rdoqr			:Set RealD Out QuaRatio
+n.pre3d.rdfw			:Set RealD Adapt On/Off
+n.pre3d.rdsta			:Set RealD Status Print
+n.pre3d.rdq			:Set RealD Query
+n.pre3d.3d22ddm			:Set 3D-to-2D Mode
+n.pre3d.3d22dq			:Get 3D-to-2D Mode
+n.vga.r			:reset(reset VGA FSM)
+n.vga.s			:status(report VGA status)
+n.vga.a			:auto(now),auto [0,1](set default)
+n.vga.ac			:ac(now)
+n.vga.bl			:bl(now)
+n.vga.adj			:bl(now)
+n.vga.pga			:pga(now)
+n.vga.adc			:adc(now)
+n.vga.sddsid			:SDDS KI0 KP0 ID
+n.vga.dddsid			:DDDS KI0 KP0 ID
+n.vga.clk			:clk ,clk [xx]
+n.vga.um			:um 
+n.vga.pos			:pos,pos [xx]
+n.vga.ps			:ps [0~31] (set input phase+fixup)
+n.vga.ps+			:phase +=1  (max 31)
+n.vga.ps-			:phase -=1 (min 0) 
+n.vga.pjs			:ps [0~31] (set input phase,no fixup)
+n.vga.bds			:bds [0~255] (set boundary threshold)
+n.vga.fw			:Fw on/off
+n.vga.dbg			:Debug [1:MDET, 2:MDCHG 4:AUTO]
+n.vga.dbg_log			:Debug [0:print all]
+n.vga.setpll			:pixelclk(/10 MHz)  htotal 
+n.vga.adslicer			:0/1 
+n.vga.automux			:0/1 
+n.vga.Oversample			:0/1 
+n.vga.acresult			:0/1 
+n.vga.ebgain			:0/1 
+n.vga.ebover			:on/off
+n.vga.vgarvol			:VGA reference voltage 
+n.vga.syncrvol			:SyncSlicer reference voltage 
+n.vga.gclk			:get vga clock
+n.vga.gps			:Get vga phase
+n.vga.ba			:begin vga auto adjust
+n.vga.bac			:begin vga auto color
+n.ttx.ttx			:Teletext
+n.ttx.cc			:Closed Caption
+n.ttx.vps			:VPS CNI code
+n.ttx.wss			:WSS
+n.vbi.DramEn			:Enable Dram Dump command
+n.vbi.mode			:Set VBI mode command
+n.vbi.rst			:Rest VBI core command
+n.vbi.dbg			:Rest VBI debug port command
+n.vbi.len			:Get Set Line Enabled command
+n.vbi.lsc			:Get Set LSC command
+n.vbi.zc			:Get Set ZC command
+n.vbi.fifo			:Get FIFO Param command
+n.vbi.omode			:Get Set Output Mode command
+n.vbi.src			:Get Set source command
+n.vbi.ccl			:Get Set CC line command
+n.vbi.ttxl			:Get Set TTX line command
+n.vbi.wssl			:Get Set WSS line command
+n.vbi.wssbl			:Get Set Type B WSS line command
+n.vbi.vpsl			:Get Set VPS line command
+n.vbi.vcc			:Verify CC command
+n.vbi.vcc2x			:Verify CC2X command
+n.vbi.vwss525			:Verify US WSS525 command
+n.vbi.vwss625			:Verify EU WSS625 command
+n.vbi.vbwss			:Verify Type B WSS command
+n.vbi.vvps			:Verify VPS command
+n.vbi.vttx			:Verify TXX command
+n.vbi.dttxpage			:Set Dump TXX Page command
+n.vbi.dnicni			:Set Dump NI CNI command
+n.vbi.dr			:Dump VBI Register command
+n.vbi.mvbi			:Monitor VBI Status command
+n.vbi.cttxpage			:Set Check TTX Page
+n.vbi.chkcc			:Set Check CC Data
+n.vbi.sline			:Scan VBI Line
+n.vbi.srange			:Scan VBI Reg Range
+n.vbi.adjgain			:Set VBI Gain for tvd path
+n.vbi.autocc			:Enable/Disable Auto CC Detection Function
+n.tvd.blank			:TVD Blank Level
+n.tvd.vga_level			:Front End VGA target Level
+n.tvd.cagc_level			:CAGC range(0xB7(-0x49)~0x89)
+n.tvd.tvd_hw			:TVD output height and width
+n.tvd.av_delay			:TVD AV Delay (HPorch)
+n.tvd.pv_delay			:TVD PV Delay (VPorch)
+n.tvd.p			:AGCPedEn
+n.tvd.cal			:AdcCalib
+n.tvd.f			:AdcFixAgc
+n.tvd.again			:AdcAGain
+n.tvd.dgain			:AdcDGain
+n.tvd.cagc			:AdcSetCagc
+n.tvd.q			:TVD status query
+n.tvd.sc			:TVD set color system
+n.tvd.gc			:TVD get color system
+n.tvd.sl			:TVD Signal Strength Level
+n.tvd.os			:TVD Over Sample Enable
+n.tvd.c			:Tvd Ctrl
+n.tvd.fdump			:Tvd Fast Dump
+n.tvd.qtest			:Qlat Auto Test
+n.tvd.hncnt			:HighNoise MCnt
+n.tvd.phaltwa			:Enable Phalt WA
+n.tvd.svf			:S-First Function Bypass
+n.tvd.NrTable			:Set NR Table
+n.tvd.StartNR			:Start to Dump NR
+n.tvd.encs			:TVD set enabled color system
+n.tvd.d_on			:TVD.d_on
+n.tvd.d_off			:TVD.d_off
+n.tvd.d_l			:TVD.d_l
+n.tdc.TdcOnOff			:TDC Enable Function
+n.nr.ink			:3DNR ink
+n.nr.dbg			:NM debug
+n.nr.nm			:NM run/stop
+n.nr.bfw			:BNR FW Mode
+n.nr.bls			:BNR Block LineSum
+n.nr.bp			:BNR Block Position
+n.nr.log			:NR Log On/Off
+n.nr.dnr			:DNR On/Off
+n.nr.q			:Query NR current status
+n.nr.d_on			:NR.d_on
+n.nr.d_off			:NR.d_off
+n.nr.d_l			:NR.d_l
+n.scart.mode			:SCART mode selet
+n.scart.i			:Scart VFE init
+n.scart.gm			:SCART GetMode
+n.scart.gfs			:SCART ServoAd status
+n.mute.q			:Main/PIP mute query
+n.mute.on			:Main/PIP mute
+n.mute.off			:Main/PIP unmute
+n.mute.color			:Main/PIP mute color
+n.mute.ena			:Main/PIP module enable
+n.mute.dis			:Main/PIP module disable
+n.mute.all			:Main/PIP mute validate
+n.mute.boot			:Boot-up mute log
+n.mute.d_on			:MUTE.d_on
+n.mute.d_off			:MUTE.d_off
+n.mute.d_l			:MUTE.d_l
+n.pt.auto			:Patterns from begin to end
+n.pt.da			:Diable all pattern
+n.pt.o			:Omux pattern on/off
+n.pt.pre			:Pre-proc pattern on/off
+n.pt.dii			:MIB/DI Intput pattern
+n.pt.dio			:MIB/DI output pattern
+n.pt.sci			:scaler input pattern
+n.pt.sco			:scaler output pattern
+n.pt.selfi			:scaler input selfgen pattern
+n.pt.sharp			:2D sharpness pattern
+n.pt.sce			:SCE(MLC input) pattern
+n.pt.mjc			:MJC in/out pattern
+n.pt.ostgin			:Output stage input pattern
+n.pt.ostgout			:Output stage output pattern
+n.pt.osd			:OSD pattern
+n.pt.eh			:Error handling pattern gen
+n.pt.mlvds			:MLVDS pattern gen
+n.pt.od			:OD pattern gen
+n.pt.enc			:Venc Pat On Off        
+n.byp.auto			:video bypass auto command
+n.byp.da			:Diable all bypass (Don't bypass)
+n.byp.pdown			:bypass pre-scaling down
+n.byp.nr			:Enable/disable NR
+n.byp.di			:bypass De-interlace
+n.byp.scl			:bypass Scaler(121 Mapping)
+n.byp.pre			:Enable/Disable Pre-Proc
+n.byp.post			:Enable/Disable Post-Proc
+n.byp.os			:Enable/Disable Output Stage
+n.byp.pq			:Turn On/Off All PQ module
+n.byp.sp			:Enanle/Bypass Sharpness
+n.byp.osd			:Disable/Enable OSD plane
+n.srm.send			:srm dummy trigger
+n.srm.setdisp			:set disp mode
+n.srm.clear			:clear manual setting
+n.srm.ditest			:set di test mode
+n.srm.p			:set srm pause
+n.srm.r			:set srm resume
+n.srm.se			:mode change done
+n.srm.tv			:set TV mode
+n.vfe.a			:VGA autocolor
+n.vfe.cal			:CVBS Calibration
+n.vfe.slicer			:Slicer level Inspection
+n.vfe.slc			:SLICER Check
+n.vfe.vss			:VOPLL Spread Spectrum
+n.vfe.pga			:CVBS PGA Check
+n.vfe.TBcheck			:Target Blank Check
+n.vfe.IOOBcheck			:In Out Offset Blank Check
+n.vfe.PKcheck			:Peak Y YC Bottom Check
+n.vfe.SVFcheck			:S-video First Check
+n.ddcci.i			:init ddcci
+n.ddcci.d			:disable ddcci
+n.ddcci.sr			:ddcci set reply
+n.ddcci.gc			:ddcci get request cmd
+n.4k2k.q			:4k2k Query
+n.4k2k.addr			:4k2k i2c addr
+n.4k2k.dly			:4k2k cmd delay
+n.4k2k.mt			:4k2k mute time
+n.4k2k.p			:4k2k panel timing
+n.mon_out.i			:MonOut query
+n.mon_out.q			:MonOut query
+n.mon_out.in			:Set monitor out input source
+n.mon_out.osdin			:Set monitor out OSD select
+n.mon_out.out			:Set monitor out output source
+n.mon_out.outres			:Set monitor out output resolution
+n.mon_out.121			:Set dot by dot output
+n.mon_out.regen			:Set overscan
+n.mon_out.tg			:Monitorout time generator
+av.i			:Av init
+av.wa			:Av workaround
+av.tv			:Tv mode
+av.l			:Av log
+av.pop			:POP Mode
+av.pip			:PIP Mode
+av.al			:Show DMA agent list
+av.dram			:DRAM Measure
+av.sram			:SRAM setting
+av.q			:query AV info
+av.e.m			:Enable Main Path
+av.e.p			:Enable Pip Path
+av.d.m			:Diasble Main Path
+av.d.p			:Diasble Pip Path
+av.sw.m			:Change Main Input
+av.sw.p			:Change Pip Input
+av.p.m			:1 Video/1 Audio Main
+av.p.0			:Change Channel Test
+av.p.0			:1 Video/1 Audio Main-H.264
+av.s.m			:1 Video/1 Audio Main
+av.s.p			:1 Video/1 Audio Pip
+vdp.i			:Vdp init
+vdp.e			:Vdp enable
+vdp.d			:Vdp disable
+vdp.r			:Vdp reset
+vdp.q			:Vdp status query
+vdp.info			:DTV info query
+vdp.stop			:Vdp stop
+vdp.f			:Vdp freeze
+vdp.nl			:Vdp nonlinear
+vdp.nnl			:Vdp new nonlinear
+vdp.nlut			:Auto setting
+vdp.rl			:Vdp enable render Log
+vdp.av			:Vdp enable avsync
+vdp.fl			:Filter B2R Log
+vdp.pt			:Vdp Test Pattern
+vdp.ld			:Vdp Last Stage Dump
+vdp.sd			:Vdp Scaler Dump
+vdp.sa			:Vdp Scaler Dram Average
+vdp.fillrect			:Fill scaler dram
+vdp.ebfl			:Enable b2r field & LR log
+vdp.d_on			:VDP.d_on
+vdp.d_off			:VDP.d_off
+vdp.d_l			:VDP.d_l
+vdp.s.m			:Vdp mode
+vdp.s.a			:Vdp alpha
+vdp.s.i			:	Vdp input
+vdp.s.overscan			:Vdp overscan
+vdp.s.srcr			:Vdp source region
+vdp.s.outr			:Vdp output region
+vdp.s.xy			:Vdp xy offset region
+vdp.s.bg			:Vdp background
+vdp.s.s			:Vdp source size
+vdp.s.plane			:Vdp plane size
+vdp.s.nr			:Vdp NR
+vdp.s.121			:Vdp 121 scaling
+vdp.s.ds			:Vdp Dynamic Scaling
+vdp.s.lbox			:Vdp LetterBox Detection
+vdp.s.lboxmode			:LetterBox Detection Mode
+vdp.s.hps			:Horizontal Pre-Scaling
+vdp.s.vps			:Vertical Pre-Scaling
+vdp.s.vpsi			:Vertical Pre-Scaling Init Phase
+vdp.s.dispoo			:Scpip display on or off
+vdp.s.10bit			:Scpos 10-bit Mode
+vdp.s.dispmode			:Vdp Display Mode
+vdp.s.crop			:Vdp Frame Cropping
+vdp.s.nover			:Vdp No Overscan
+vdp.s.bpts			:B2R PTS check on PTS value
+vdp.s.game			:Vdp Game Mode
+vdp.s.fix			:Vdp Fix Mode
+vdp.t.s			:Vdp scale test
+vdp.t.stress			:Vdp stress test
+vdp.t.b2r2			:B2R SD path test
+vdp.t.pause			:B2R set pause
+vdp.t.d			:B2R dump registers
+vdp.wfd.al			:Active/Deactive Wfd CLI
+vdp.wfd.adj			:Set Static Latency
+vdp.wfd.ql			:WFD Latency query
+prescale.d_on			:PRESCALE.d_on
+prescale.d_off			:PRESCALE.d_off
+prescale.d_l			:PRESCALE.d_l
+fbm.i			:Fbm init
+fbm.q			:Fbm status query
+fbm.mid			:Fbm mid setting
+fbm.s			:Fbm status
+fbm.c			:Fbm create group
+fbm.r			:Fbm release group
+fbm.rst			:Fbm reset group
+fbm.color			:Fbm set color
+fbm.ck			:Fbm check pool
+fbm.cg			:Fbm change pool
+fbm.que			:Fbm Que Empty/Display que info
+fbm.msk			:Control log output
+fbm.sdd			:set dump dir,default:/mnt/usb/sda1/
+fbm.d			:dump fb data:dump +fbgid +fbid, if dump +fbgid, will dump all displayQ and locked fb
+fbm.stq			:enable: stq 1;disable:stq 0
+fbm.fb			:Fbm Show Frame Buffer Info
+fbm.save bw mode			:Fbm save dram bw mode
+fbm.d_on			:FBM.d_on
+fbm.d_off			:FBM.d_off
+fbm.d_l			:FBM.d_l
+dbs.i			:Dbs init
+dbs.s			:Dbs stop
+dbs.go			:Dbs start
+dbs.p			:Dbs print at once
+dbs.r			:Dbs reset
+mpv.dbkt			:DBK Test
+mpv.dbkp1			:DBK Para1
+mpv.dbkp2			:DBK Para2
+mpv.ecs			:EC mode
+mpv.dbkr			:DBK Interest Region
+mpv.dbk			:DBK Mode
+mpv.dbkquery			:DBK Query
+mpv.dbkset			:DBK Setting
+mpv.mm			:MC Mode
+mpv.rr			:mpv reduce-reference Mode
+mpv.i			:Init : Create Thread, sema, INT
+mpv.t			:Termint : Terminate Thread, sema, INT
+mpv.r			:Module reset
+mpv.p			:Start to decode
+mpv.s			:Stop decoding
+mpv.ps			:Pause decoding
+mpv.sy			:Sync STC
+mpv.ec			:Set EC
+mpv.q			:Query Status
+mpv.clr			:Clear RR Dbk
+mpv.f			:Flush decoding
+mpv.d_on			:MPV.d_on
+mpv.d_off			:MPV.d_off
+mpv.d_l			:MPV.d_l
+vdec.i			:Vdec init
+vdec.p			:Vdec play
+vdec.ps			:Vdec pause
+vdec.s			:Vdec stop
+vdec.fs			:Vdec force src type
+vdec.srr			:Vdec set RR mode
+vdec.secm			:Vdec set EC mode
+vdec.ss			:Vdec set sync stc
+vdec.q			:Vdec query info
+vdec.r			:Vdec rst time profile
+vdec.d			:Vdec dram usage
+vdec.c			:Vdec capture
+vdec.bb			:Vdec set B parameter
+vdec.ds			:Vdec set dram bandwidth simulation
+vdec.mid			:Vdec mid protection
+vdec.st			:Vdec av sync test
+vdec.fd			:Set FixHDDisplay For avs part
+vdec.speed			:mm playback speed test
+vdec.vp9			:vp9 debug log option
+vdec.ml			:vdec log mode
+vdec.rp			:Print Rsv and PutQ info.
+vdec.setvdec			:vdec set status
+vdec.pvp			:start play a DTV video PID to main/sub video path
+vdec.svp			:Stop play DTV video PID 
+vdec.d_on			:VDEC.d_on
+vdec.d_off			:VDEC.d_off
+vdec.d_l			:VDEC.d_l
+vdec.rm.c			:	Force connect
+vdec.rm.q			:	Query capability
+vdec.rm.s			:	RM Set
+vomx.i			:Vomx init
+vomx.io			:vdecomx input & output log
+vomx.in			:vdecomx input log
+vomx.out			:vdecomx output log
+vomx.dbg			:vdecomx debug log
+vomx.vbs			:vdecomx verbose log
+vomx.frz			:vdecomx freeze
+vomx.d_on			:VOMX.d_on
+vomx.d_off			:VOMX.d_off
+vomx.d_l			:VOMX.d_l
+tcon.i			:Tcon init
+tcon.r			:Is Tcon ready
+tcon.tp			:Tcon test pattern
+tcon.efuse			:EFUSE check
+tcon.eh.i			:Error Handling initial
+tcon.eh.s			:Error Handling mute status
+tcon.eh.fix			:Error Handling fix function enable
+tcon.eh.mute			:Error Handling mute function enable
+tcon.eh.source			:Error Handling source select
+tcon.if.source			:IF source select
+ptp.i			:TS init
+ptp.t			:Get CPU temperature
+ptp.gtt			:Get trigger temperature
+ptp.stt			:Set trigger temperature
+ptp.source			:Set ADC source
+ptp.test			:Do test
+ptp.efuse			:Get Efuse data
+venc.q			:Query the info.of video encoder
+venc.oq			:Query the video encoder object
+venc.od			:Dump the video encoder' stream
+venc.sl			:Set video resolution
+venc.sfr			:Set video frame rate
+venc.sbr			:Set video bit rate
+venc.bs			:Dump Bitstream
+venc.mtal			:Toggle MTAL log
+venc.rc			:Toggle Rate control
+venc.encode			:Encode test command
+venc.ts			:Trigger Scaler
+venc.svp			:SVP protection verification
+venc.spp			:SVP protection verification
+venc.d_on			:VENC.d_on
+venc.d_off			:VENC.d_off
+venc.d_l			:VENC.d_l
+venc.ms.q			:Query the info.of video encoder
+venc.ms.r			:Multiscreen interaction demo: Run
+venc.ms.s			:Multiscreen interaction demo: Stop
+venc.ms.bs			:Dump Bitstream
+venc.ms.tn			:Get thumbnail test
+venc.ms.d_on			:VENC.d_on
+venc.ms.d_off			:VENC.d_off
+venc.ms.d_l			:VENC.d_l
+pdwnc.d_on			:PDWNC.d_on
+pdwnc.d_off			:PDWNC.d_off
+pdwnc.d_l			:PDWNC.d_l
+pdwnc.i			:
+pdwnc.q			:
+pdwnc.rservo			:
+pdwnc.downir			:
+pdwnc.downirservo			:
+pdwnc.downirservovga			:
+pdwnc.downgpio			:
+pdwnc.downrtc			:
+pdwnc.downservo			:
+pdwnc.downuart			:
+pdwnc.downvga			:
+pdwnc.downt8032			:
+pdwnc.downmake			:
+pdwnc.wdtreg			:
+pdwnc.wdtcon			:
+pdwnc.st8032			:
+pdwnc.t8032cmd			:
+pdwnc.pwm			:
+pdwnc.wdtisr			:
+jpg.dimg			:Jpeg _JpgCmdDebugStep(0:JPG, 1:PNG )
+jpg.d_on			:JPG.d_on
+jpg.d_off			:JPG.d_off
+jpg.d_l			:JPG.d_l
+png.d_on			:PNG.d_on
+png.d_off			:PNG.d_off
+png.d_l			:PNG.d_l
+gpio.d_on			:GPIO.d_on
+gpio.d_off			:GPIO.d_off
+gpio.d_l			:GPIO.d_l
+gpio.init			:gpio.init
+gpio.stop			:gpio.stop
+gpio.reset			:gpio.reset
+gpio.ls			:gpio.ls
+gpio.en			:gpio.en [-i/-r/-f/-L/-H][gpio num]
+gpio.dis			:gpio.dis [gpio num]
+gpio.ps			:gpio.ps [sel num] [[func no.]]
+gpio.out			:gpio.out [gpio num] [[0|1]]
+gpio.st			:gpio.status [gpio num]
+gpio.out_v			:gpio.out_verify [gpio_start] [gpio_end]
+gpio.in			:gpio.in [gpio num]
+gpio.vl			:gpio.vl [gpio num]
+gpio.seg7			:gpio.seg7
+gpio.time			:gpio.time
+gpio.test			:gpio.test
+gpio.assert			:gpio.assert
+gpio.abort			:gpio.abort
+gpio.servo			:gpio.servo [0-4]
+gpio.twg			:gpio.twg - to test watchdog
+mid.i			:Initialize MID driver
+mid.x			:Shutdown MID driver
+mid.r			:Reset MID driver
+mid.sr			:Setup a region
+mid.rr			:Reset a region
+mid.al			:Show DMA agent list
+mid.rl			:Show all region states
+mid.e			:Enable a region
+mid.d			:Disable a region
+mid.h			:Halt on intrusion
+mid.mss			:Set Memory Statistics config
+mid.msg			:Get Memory Statistics config & stat
+mid.mf			:Flush memory cache
+mid.ie			:Set on/off memory intrude interrupt [1|0]
+mid.rs			:Reset Intrusion status
+mid.q			:Query Intrusion status
+mid.ch			:Set dram channel
+mid.ds			:Detect Intrusion status
+mid.dpi			:DMARB Dynamic Priority init
+mid.dpst			:DMARB Dynamic Priority stress test
+mid.dpo			:DMARB Dynamic Priority once
+mid.dpd			:DMARB Dynamic Priority display
+mid.dpr			:DMARB Dynamic Priority reset
+mid.d_on			:MID.d_on
+mid.d_off			:MID.d_off
+mid.d_l			:MID.d_l
+swdmx.i			:Init software demuxer
+swdmx.o			:Open software demuxer
+swdmx.p			:Run the software demuxer to play AV
+swdmx.f			:filter the log
+swdmx.s			:Stop the software demuxer to play AV
+swdmx.q			:Query the software demuxer information
+swdmx.t			:Test the software demuxer to play AV
+swdmx.tfeeder			:Test the software feeder to swdmx
+swdmx.tmpg			:Test the software demuxer to play MPG PS
+swdmx.sp			:Set Speed (1000, 2000, -1000)
+swdmx.spos			:Set Position (0 ~ 1000)
+swdmx.enable			:enable ts prebuffer(default is enable)
+swdmx.disable			:disable ts prebuffer
+swdmx.reset			:recover ts prebuffer init status
+swdmx.multiple			:modify Req size by multiple
+swdmx.sm			:Force Change seamless info
+swdmx.disShadowBuf			:disable ShadowBuf for Ts Push Mode
+swdmx.enShadowBuf			:(default) enable ShadowBuf for Ts Push Mode
+swdmx.ddc			:[dumpLen] [dumpMode: 0-tail, !0-head] [interval] [totalDumpCnt]
+swdmx.fst			:fst [FastStartTime (ms)(dfl 500ms)] [SpeedValidDuration (ms) (dfl 250ms)]
+swdmx.uft			:uft [Underflow Time (ms)(dfl 90ms)] [Buffer Ready (ms) (dfl 900ms)]
+swdmx.dits			:ditsk [0-can do itseek, 1-disable iterseek]
+swdmx.tspmpg			:1-USE swdmx_mpg.c 0-use swdmx_ts.c
+swdmx.tspt			:tspt [Video Pes Cnt ] [Aud Data Size]
+swdmx.d_on			:SWDMX.d_on
+swdmx.d_off			:SWDMX.d_off
+swdmx.d_l			:SWDMX.d_l
+feeder.d_on			:FEEDER.d_on
+feeder.d_off			:FEEDER.d_off
+feeder.d_l			:FEEDER.d_l
+feeder.stche			:set feeder cli cache value
+feeder.gtche			:get feeder cli cache value
+feeder.fche			:get feeder cli cache value
+feeder.q			:query feeder buffer info
+feeder.delay			:data ack delay time,monitor network application delay
+tve.i			:Tve init
+tve.e			:Tve enable
+tve.d			:Tve disable
+tve.r			:Tve reset
+tve.q			:Tve status query
+tve.stop			:Tve stop
+tve.po			:DAC Power On
+tve.pd			:DAC Power Down
+tve.pm			:PIP Mixer On/Off
+tve.cs			:TVE Control SetSource
+tve.delay			:TVE Control SetMuteDelay
+tve.current			:TVE Hal SetCurrent
+tve.ab			:Tve Abist Bypass
+tve.vc			:Vdac Software Calibration
+tve.full			:set abistbypass full dc wave 
+tve.zero			:set abistbypass zero dc wave
+tve.read			:readadcvalue
+tve.d_on			:TVE.d_on
+tve.d_off			:TVE.d_off
+tve.d_l			:TVE.d_l
+tve.s.f			:Tve format
+tve.s.imp			:Tve Impedence (0/1 => Low/High)
+tve.s.m			:Tve mode
+tve.s.cb			:Tve colorbar
+tve.cc.e			:CC enable
+tve.cc.d			:CC disable
+tve.cc.s			:CC send
+tve.cgms.s			:CGMS-A set value
+tve.wss.e			:WSS enable
+tve.wss.d			:WSS disable
+tve.wss.asr			:Aspect ratio
+tve.ttx.e			:TTX enable
+tve.ttx.d			:TTX disable
+tve.ttx.s			:TTX send
+timeprofile.dit			:Driver init time profiling
+timeprofile.t			:exe time profile
+timeprofile.c			:clear ISR statistics
+timeprofile.tcr			:critical exe time profile
+bim.cache			:show cache statistic
+bim.bt			:Boot time parsing
+bim.p			:PWM [PWM src][u4DutyAll 0-0xfe][u4DutyOn 0-0xff][u4TimeBase 0-0xfff]
+bim.tz.st			:run tz stress test
+bim.tz.ut			:run tz unit test
+bim.tz.d_l			:enable tz debug message
+p.d_on			:PCMCIA.d_on
+p.d_off			:PCMCIA.d_off
+p.d_l			:PCMCIA.d_l
+p.i			:Init POD driver, get cis, nego buf size4
+p.pc			:Pinmux check
+p.d.dm			:Detach CI MW
+p.d.cis			:Check CIS information
+p.d.neg			:Negotiate buffer size
+p.d.tc			:Create TC
+p.v.reg			:Register test
+p.v.sreg			:Single Register R/W test
+p.v.wnd			:Memory Window test (SysBuild)
+p.v.pll			:PLL Test (SysBuild)
+p.v.gpio			:Test GPIO Pings
+p.v.tc			:Automatically create T_C
+p.v.pbus			:PBus Test (DrvBuild)
+p.v.tnas			:Thread Don't Assert, 0:Ast, 1:NoAst,
+p.v.st			:Stop Pcmcia Thread
+p.v.5vpc			:CI 5V Control, 0:Original, 1:Manual
+p.v.scpt			:Set Chip Type, 0:External, 1:Internal
+p.v.scdt			:Set Card Type, 0:CI, 1:POD
+p.v.sit			:Set Interface Type, 0:NFI, 1:SPI
+p.v.rstc			:Reset Card
+p.v.rst			:Reset MT8295
+p.v.sam			:Set Access Mode, 0:SDM, 1:DMA
+p.v.slt			:Start SLT procedure
+p.v.demo			:Start for Demo Program
+p.v.ckr			:Set External IC Serial TS Clk Out Rate
+p.v.dts			:Enable/Disable  Demod TS
+p.v.rt			:Set TS route
+p.c.r			:Read CI module registers
+p.c.w			:Read CI module registers
+p.c.bps			:TS bypass 8295, 0:Off, 1:ON
+p.c.pts			:Set Paralles TS, 0:Serial, 1:Parallel
+p.c.extd			:Set External Demod, 0:OFF, 1:ON
+p.c.stt			:Set TS Type, [0:DVB-T, 1:DVB-C]
+p.c.ge			:GPIO Enable, Gpio, Polarity
+p.c.gi			:Get GPIO Input Value
+p.c.go			:Set GPIO Output Value
+p.c.gint			:Enable/Disable GPIO Interrupt
+p.c.s2b			:Set/Get 2 bit
+p.c.sd			:Set Drivin
+p.c.stc			:Set TS Clock
+p.c.ssc			:Set Sys Clock
+p.ci.cis			:Get CIS
+p.p.cis			:Get CIS
+p.m.i			:Init MPOD
+p.m.r			:MPOD read
+p.m.w			:MPOD write
+p.m.oas			:MPOD open a session
+p.m.stress			:MPOD CPU Interface Stress Test
+p.m.cks			:Ckgen Register Stress Test
+p.m.ts.i			:MPOD TS Init
+p.m.ts.info			:MPOD TS Info
+p.mi.et			:Enable TS, 0:Off, 1:On
+p.mi.es			:Enable Slot, 0:Off, 1:On
+p.s.i			:Init SPI module
+p.s.r			:Reset SPI module
+p.s.sw			:SDA write
+p.s.sr			:SDA read
+p.s.dw			:DMA write
+p.s.dr			:DMA read
+p.s.dt			:DMA test
+p.s.dta			:DMA alloc
+p.s.dts			:DMA start
+p.s.pr			:Demod proxy read
+p.s.pw			:Demod proxy write
+p.n.i			:Init NFI module
+p.n.sw			:SDA write
+p.n.sr			:SDA read
+p.n.bw			:Burst write
+p.n.br			:Burst read
+os.ssa			:Show all semaphore information
+os.mdw			:Create a thread to write dram at full speed
+os.sdp			:Create a thread to dynamic change dram priority
+os.d_on			:OS.d_on
+os.d_off			:OS.d_off
+os.d_l			:OS.d_l
+linux.pr			:Linux protect RO data
+linux.mtal_dbg_msk			:Change MTAL debug mask
+linux.ltsu			:List thread stack usage
+linux.qcq			:query mtal callback queue
+linux.txtd			:Test x_thread_delay
+linux.tadm			:Test BSP_AllocAlignedDmaMemory
+linux.d_on			:LINUX.d_on
+linux.d_off			:LINUX.d_off
+linux.d_l			:LINUX.d_l
+gfx.slt			:Gfx SLT
+gfx.tbb			:test bitblt
+gfx.dbl			:debug level
+gfx.dfd			:dfb debug info
+gfx.qt			:query task
+gfx.i			:Gfx init
+gfx.res			:Gfx reset
+gfx.f			:Gfx command queue flush (auto on off)
+gfx.q			:Gfx Query HW status
+gfx.clk			:Gfx engine clock source
+gfx.qcfg			:Gfx engine cmdque configuration
+gfx.crashd			:Gfx engine crash detection
+gfx.memcomp			:Memory Compare Operation
+gfx.memset			:Memory Set Operation
+gfx.lk			:gfx lock
+gfx.ulk			:gfx unlock
+gfx.rotate			:Rotate Operation
+gfx.rb			:Rotate Operation
+gfx.srb			:Rotate Operation
+gfx.d_on			:GFX.d_on
+gfx.d_off			:GFX.d_off
+gfx.d_l			:GFX.d_l
+gfx.s.d			:Set destination buffer
+gfx.s.s			:Set source buffer
+gfx.s.idx2dirsrc			:Set idx2dir source buffer
+gfx.s.bopt			:Set bitblt option
+gfx.s.a			:Set alpha value
+gfx.s.c			:Set color value
+gfx.s.cfmt			:Set color conversion format
+gfx.s.csrc			:Set color conversion source
+gfx.s.rcode			:Set ROP op code
+gfx.s.idx2diropt			:Set Index to direct color bitblt option
+gfx.s.h2vlineopt			:Set hori lint to vert line option (Is90dCcw)
+gfx.s.third			:Set third  option (Is90dCcw)
+gfx.s.la			:Set Legal Addr para(enable,start,end)
+gfx.s.MMU Enable/Disable			:Set gfx mmu enable(1) or disable(0)
+gfx.s.gpm			:Set Golden Pattern mode
+gfx.s.gopt			:Set gradient fill option
+gfx.op.pften			:enable or disable cache flush in gfx_flush function
+gfx.op.ft			:Draw rectangle
+gfx.op.bdt			:Blend test
+gfx.op.sr			:Suspend Resume
+gfx.op.y2r			:ycrcr to argb32
+gfx.op.bt			:bit blt
+gfx.op.bct			:Blt_compose_test
+gfx.op.sblt			:stretchblt test
+gfx.op.sblct			:stretchblt compose test
+gfx.op.r			:Draw rectangle
+gfx.op.h			:Draw h-line
+gfx.op.v			:Draw v-line
+gfx.op.blt			:Bitblt
+gfx.op.b			:Alpha blending bitblt
+gfx.op.c			:Alpha composition bitblt
+gfx.op.cp			:Alpha composition pass
+gfx.op.cnv			:Color format convert
+gfx.op.s			:Stretch bitblt
+gfx.op.am			:Alpha map bitblt
+gfx.op.rop			:Raster Operation
+gfx.op.2dmemcomp			:2D Memory Compare Operation
+gfx.op.cl			:Alpha composition loop bitblt
+gfx.op.idx2dirblt			:Index to direct color bitblt
+gfx.op.h2vline			:Horizontal line to vertical line operation
+gfx.op.tpf			:transparent fill rect
+gfx.op.g			:Draw gradient fill
+gfx.op.d			:1-D bitblt
+gfx.op.srt			:Start Rect-fill Test (av.dram measurement)
+gfx.op.ert			:Exit Rect-fill Test (av.dram measurement)
+imgrz.i			:Imgrz init
+imgrz.res			:Imgrz reset
+imgrz.f			:Imgrz command queue flush (auto on off)
+imgrz.q			:Imgrz Query HW status
+imgrz.clk			:Imgrz engine clock source
+imgrz.qcfg			:Imgrz engine cmdque configuration
+imgrz.crashd			:Imgrz engine crash detection
+imgrz.pft			:Imgrz-PerformanceTest operations
+imgrz.enfi			:Imgrz-FlushInvalidateDCache on off
+imgrz.ml			:Modelevel
+imgrz.d_on			:IMGRZ.d_on
+imgrz.d_off			:IMGRZ.d_off
+imgrz.d_l			:IMGRZ.d_l
+imgrz.osdop.src			:set source buffer
+imgrz.osdop.tg			:set target buffer
+imgrz.osdop.scale			:scale up/down

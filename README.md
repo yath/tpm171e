@@ -21,42 +21,87 @@ speaking the adb protocol (you’ll need a USB A-to-A cable). This seems to alwa
 case in fastboot mode, out of which you can (apparently only) get with `fastboot continue`.
 Don’t type `reboot bootloader`!
 
-## cli\_shell
+## cli
 
-`cli_shell` is a debug tool that writes (via `ioctl(fd, 1, command_buffer)`)
-the requested command to `/dev/cli`, which is writable by the `shell` group (i.e. via
-`adb`). The command response is printed to the kernel log, which is not directly readable
-by the shell user, but shows up in the Android log.
+### Technical details
 
-For instance, to get a help, run:
-```
-shell@PH7M_EU_1337:/ $ cli_shell help                                                               
-sh: can't create /proc/sys/kernel/printk: Permission denied
-sh: can't create /proc/sys/kernel/printk: Permission denied
-shell@PH7M_EU_1337:/ $ logcat -d|sed 's/.* MTK_KL[^:]*: \(.*\)/\1/p;d'
-[…]
-<4>[ 1196.054971] cd:                     Change current directory
-<4>[ 1196.054981] do:                     Repeat command
-<4>[ 1196.054986] alias(a):               Add/Show current alias
-<4>[ 1196.055025] ls:                     Recursive list all commands
-[…]
-```
+`/dev/cli` is the debug interface to `dtv_driver.ko`. It supports some ioctls
+(cf. `cli_ioctl()`).
 
-Some useful commands:
-* `b.ver`: Prints system information
-* `r`: Read memory
-* `w`: Write memory
+* `ioctl(fd, 0, &char)`: Places a character into the UART input buffer.
 
-### Obtaining addresses of `mtk\_mod`
+* `ioctl(fd, 1, &str)`: Passes a (0-terminated) string to `CLI_Parser()`.
 
-`dtv_driver.ko` contains the code for the `/dev/cli` handlers. To obtain a stack trace and
-code dump, run `adb logcat` in one window and `adb shell cli_shell r 0x0 0x10` in another,
-causing a NULL dereference.
+* `ioctl(fd, 0x100)`: Acquires a semaphore.
+
+* `ioctl(fd, 0x101)`: Releases this semaphore.
+
+* `ioctl(fd, 0x102, void*)`: Calls `DMX_SetCapture()` with the user-supplied argument.
+
+* `ioctl(fd, 0x103, void*)`: Calls `DMX_GetCaptureInfo()` with the user-supplied argument.
+
+I haven’t played around with any other ioctl than 0 or 1.
+
+`/dev/cli` is writable by the shell user, but some (obscure) commands return `EPERM`. That
+said, most don’t. `cli_shell` is a pre-installed binary that does (essentially) the following:
 
 ```
-[ 5075.501468] [<bf38e598>] (_CmdMemRead+0x90/0xe0 [mtk_mod]) from [<bf0cf9d8>] (CLI_CmdList+0x44c/0x494 [mtk_mod])
-[ 5075.502379] [<bf0cf9d8>] (CLI_CmdList+0x44c/0x494 [mtk_mod]) from [<bf0d0194>] (CLI_PromptParser+0x234/0x29c [mtk_mod])
-[ 5075.503255] [<bf0d0194>] (CLI_PromptParser+0x234/0x29c [mtk_mod]) from [<bf0cee4c>] (CLI_Input+0xb4/0x2fc [mtk_mod])
-[ 5075.504252] [<bf0cee4c>] (CLI_Input+0xb4/0x2fc [mtk_mod]) from [<bf3201a4>] (ThreadProc+0x9c/0xa0 [mtk_mod])
-[ 5075.504842] [<c004da70>] (kthread+0xbc/0xc8) from [<c000e718>] (ret_from_fork+0x14/0x20)
+int fd = open("/dev/cli", O_RDWR);
+system("echo 0 > /proc/sys/kernel/printk");
+char *command = append(join(" ", argc, argv), "\r\n");
+char c;
+while (c = *command++)
+  ioctl(fd, 0, &c);
+system("echo 7 > /proc/sys/kernel/printk");
+usleep(200000);
 ```
+
+It is probably meant for a user on the serial console, to which the kernel log would
+get printed. With adb access, you can simply run `logcat -s MTK_KL|tr \\r \\n`.
+
+The [cli](cli.go) in this repository simplifies the access via adb. It only prints the
+actual command output before exiting, by placing a sentinel alias before and after
+the command, all of which are sent with ioctl _1_ instead of 0. I couldn’t see a
+difference. It sometimes fails; if there is no output after a couple of seconds, and
+the CLI isn’t blocked (e.g. by a running `b.da`), try hitting ^C and try again.
+
+### The UI
+
+`ls` gets you a list of (most) commands. See
+[cmdlist-guest.txt](cmdlist-guest.txt) and [cmdlist-sv.txt](cmdlist-sv.txt) for
+mine. The CLI knows a default “guest” mode and a higher-privileged “guest” mode.
+The `b.sv` command is apparently meant to detect this based on some external
+trigger, but `b.scm 0` (set cli mode?) lets us handily switch to supervisor mode
+and `b.scm 2` back. See `_arDefaultCmdTbl` in `dtv_driver.ko` for all commands -
+I couldn’t find any interesting.
+
+Generally, the _something_.q commands seem to query only and are probably harmless.
+`.d_on`, `.d_off` and `.d_l` set/show debug/log levels.
+
+Some random notes:
+
+* `cust` or customer refers to Philips/TPVision. It’s likely that `dtv_driver.ko`
+   was mostly written by Mediatek.
+
+* The kernel and the modules are always loaded in the same order at the same addresses.
+
+* `MID` refers to a “Memory Intrustion Detection” and probably is some [HDCP
+   Nonsense](https://www.cs.auckland.ac.nz/~pgut001/pubs/vista_cost.html). It does
+   nothing about the kernel, however, which starts at `0xc0008000`.
+
+* `linuxmode` puzzles me a bit, it seems to move the base offsets for the memory
+   read/write commands only. My current guess is that some other CPU (which is
+   the “Linux” one, as opposed to the “Android” one) has its memory mapped to
+   that offset and one can poke around on the other CPU.
+
+*  The code has little error checking, to put it mildly. E.g. the `do` command
+   for repeating a CLI command locks up with `do 0 ls`.
+
+* `b.da` gives a thread dump of the kernel portion of all tasks.
+
+* `dtv_driver` calls its own `CLI_Parser` (which has a global mutex) every once
+   in a while.
+
+I haven’t really played around with anything else than the memory read/write
+operations to get some code running. But see the [Makefile](Makefile) for how to
+link and run code in the kernel.
