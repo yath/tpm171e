@@ -1,7 +1,7 @@
 # TPM171E
 
 This page collects some technical information for the Philips (a.k.a. TPVision)
-Android TV; specifically, for my 2018 65OLED803 series. Addresses may vary.
+Android TV; specifically, for my 2018 65OLED863 series. Addresses may vary.
 
 **NOTE: This document is work in progress!**
 
@@ -73,7 +73,7 @@ mine. The CLI knows a default “guest” mode and a higher-privileged “guest�
 The `b.sv` command is apparently meant to detect this based on some external
 trigger, but `b.scm 0` (set cli mode?) lets us handily switch to supervisor mode
 and `b.scm 2` back. See `_arDefaultCmdTbl` in `dtv_driver.ko` for all commands -
-I couldn’t find any interesting.
+I couldn’t find any interesting hidden ones (`//` for line comment is one).
 
 Generally, the _something_.q commands seem to query only and are probably harmless.
 `.d_on`, `.d_off` and `.d_l` set/show debug/log levels.
