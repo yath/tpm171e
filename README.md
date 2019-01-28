@@ -69,7 +69,7 @@ the CLI isn’t blocked (e.g. by a running `b.da`), try hitting ^C and try again
 
 `ls` gets you a list of (most) commands. See
 [cmdlist-guest.txt](cmdlist-guest.txt) and [cmdlist-sv.txt](cmdlist-sv.txt) for
-mine. The CLI knows a default “guest” mode and a higher-privileged “guest” mode.
+mine. The CLI knows a default “guest” mode and a higher-privileged “supervisor” mode.
 The `b.sv` command is apparently meant to detect this based on some external
 trigger, but `b.scm 0` (set cli mode?) lets us handily switch to supervisor mode
 and `b.scm 2` back. See `_arDefaultCmdTbl` in `dtv_driver.ko` for all commands -
