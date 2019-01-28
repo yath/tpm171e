@@ -102,6 +102,9 @@ Some random notes:
 * `dtv_driver` calls its own `CLI_Parser` (which has a global mutex) every once
    in a while.
 
+*  The `printk()`s are full of carriage-returns that you may want to strip
+   off when viewing logcat output.
+
 I haven’t really played around with anything else than the memory read/write
 operations to get some code running. But see the [Makefile](Makefile) for how to
 link and run code in the kernel.
