@@ -30,6 +30,17 @@ cli: cli.go
 threaddump.txt:
 	$(MAKE) run-cli CLICOMMAND=b.da | tee $@
 
+MEMDUMP_BASE_ADDR ?= 0xc0008000
+MEMDUMP_LEN ?= 9264960 # ls -l Image
+
+.PRECIOUS: memdump.txt
+memdump.txt:
+	$(MAKE) run-cli CLICOMMAND="b.scm 0"
+	$(MAKE) run-cli CLICOMMAND="b.mdmp $(MEMDUMP_BASE_ADDR) $(MEMDUMP_LEN)" | tee $@
+
+memdump.bin: memdump.txt
+	$(PERL) -nE 'say sprintf("%08x: %s", hex($$1)-$(MEMDUMP_BASE_ADDR), $$2) if /^(0x.*?) \| ([^|]+)/' < $< | $(XXD) -r > $@
+
 threaddump.lds: threaddump.txt
 	$(PERL) -nE 'say sprintf("%s = 0x%08x;", $$2, hex($$1)-hex($$3)) for /\[<(.*?)>\] \((.*?)\+0x(.*?)\//' < $< | sort -u | sort -k3 > $@
 
