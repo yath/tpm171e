@@ -14,6 +14,7 @@ import (
 
 var dumpKernel = flag.String("dump_kernel", "", "dump uncompressed kernel to the filename given")
 var dumpSymtab = flag.String("dump_symtab", "", "dump symbol table to the filename given")
+var isUncompressed = flag.Bool("is_uncompressed", false, "whether the passed zImage is an Image")
 
 // lzop tries decompressing in with lzop, ignoring warnings (i.e. trailing garbage).
 func lzop(in []byte) ([]byte, error) {
@@ -102,9 +103,9 @@ func (s *symbol) lds() string {
 // 0x00
 //
 // The code relies on being able to spot an entry in the list of names by a
-// well-known and expected name (currently: kallsyms_lookup_name).
+// well-known and expected name (currently: cpu_active_mask).
 func getSymtab(kernel []byte) ([]*symbol, error) {
-	const sym = "\x00kallsyms_lookup_name\x00"
+	const sym = "\x00cpu_active_mask\x00"
 
 	// Find the symbol in the string table.
 	i := bytes.Index(kernel, []byte(sym))
@@ -210,9 +211,14 @@ func main() {
 		log.Fatalf("Can't read zImage: %v", err)
 	}
 
-	kernel, err := findKernel(zImage)
-	if err != nil {
-		log.Fatalf("Kernel not found in zImage: %v", err)
+	var kernel []byte
+	if *isUncompressed {
+		kernel = zImage
+	} else {
+		kernel, err = findKernel(zImage)
+		if err != nil {
+			log.Fatalf("Kernel not found in zImage: %v", err)
+		}
 	}
 	zImage = nil
 
