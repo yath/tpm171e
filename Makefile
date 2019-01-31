@@ -39,7 +39,7 @@ memdump.txt:
 	$(MAKE) run-cli CLICOMMAND="b.mdmp $(MEMDUMP_BASE_ADDR) $(MEMDUMP_LEN)" | tee $@
 
 memdump.bin: memdump.txt
-	$(PERL) -nE 'say sprintf("%08x: %s", hex($$1)-$(MEMDUMP_BASE_ADDR), $$2) if /^(0x.*?) \| ([^|]+)/' < $< | $(XXD) -r > $@
+	$(PERL) -ne 'if (($$_) = /^0x.*? \| ([^|]+)/) { print chr hex for /[0-9a-f]{2}/g }' < $< > $@
 
 threaddump.lds: threaddump.txt
 	$(PERL) -nE 'say sprintf("%s = 0x%08x;", $$2, hex($$1)-hex($$3)) for /\[<(.*?)>\] \((.*?)\+0x(.*?)\//' < $< | sort -u | sort -k3 > $@
