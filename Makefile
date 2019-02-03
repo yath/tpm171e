@@ -1,4 +1,4 @@
-ALL_BINARY_TARGETS := exploit decrypt cli kernelutil
+ALL_BINARY_TARGETS := exploit decrypt cli kernelutil loader
 
 .PHONY: all
 all: $(ALL_BINARY_TARGETS)
@@ -13,6 +13,8 @@ READELF := readelf
 XXD := xxd
 
 CFLAGS += -W -Wall -Wextra
+TARGET_CFLAGS = $(CFLAGS) -mcpu=cortex-a17 -mfpu=neon
+
 CROSS := arm-none-eabi-
 
 RUN_CLI_DIR := /data/local/tmp
@@ -83,10 +85,19 @@ shellcode.addr.h: shellcode.o
 exploit: main.c shellcode.bin.h shellcode.addr.h
 	$(CC) $(CFLAGS) -I$(CURDIR) -o $@ $<
 
+findsym.elf: findsym.c findsym.lds
+	$(CROSS)$(CC) $(TARGET_CFLAGS) -Os -ffreestanding -nostdlib -o $@ -Wl,-r -T findsym.lds $<
+
+assets.go: findsym.elf
+	go-bindata -nocompress -pkg main -o $@ $^
+
+loader: loader.go assets.go
+	$(GO) build -o $@ $^
+
 .PHONY: run-cli
 run-cli: cli
 	$(ADB) push cli $(RUN_CLI_DIR)/cli && $(ADB) shell $(RUN_CLI_DIR)/cli $(CLICOMMAND)
 
 .PHONY: clean
 clean:
-	rm -f *.o *.bin *.bin.h *.addr.h buildts.S *.lds $(ALL_BINARY_TARGETS)
+	rm -f *.o *.bin *.bin.h *.addr.h buildts.S dtv_driver.lds threaddump.lds kernel.lds assets.go $(ALL_BINARY_TARGETS)
