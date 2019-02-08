@@ -17,12 +17,18 @@ import (
 	"strconv"
 	"sync"
 	"syscall"
+	"time"
 	"unsafe"
 )
 
+const targetSymbol = "_CmdVersion"
+const triggerCmd = "b.ver"
+
 var flagAsset = flag.String("asset", "findsym.elf", "name of the bundled asset")
-var flagLoadAddr = flag.Uint("load_addr", 0, "load address (i.e. _CmdVersion)")
+var flagLoadAddr = flag.Uint("load_addr", 0, "load address (i.e. "+targetSymbol+"). 0 determines it automatically.")
 var flagDump = flag.String("dump", "", "dump final relocated binary to given filename")
+var flagWrite = flag.Bool("write", true, "write relocated binary to determined load address")
+var flagTrigger = flag.Bool("trigger", true, "trigger loaded binary with "+triggerCmd)
 
 var warning = log.New(os.Stderr, "WARNING: ", log.LstdFlags)
 
@@ -152,10 +158,12 @@ func sendString(f *os.File, cmd string) error {
 		return fmt.Errorf("can't get a byte buffer: %v", err)
 	}
 
+	start := time.Now()
 	_, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(f.Fd()), 1, uintptr(unsafe.Pointer(bp)))
 	if errno != 0 {
 		return fmt.Errorf("ioctl(%v, INPUT_STRING, %q) failed: %v", f, cmd, errno)
 	}
+	log.Printf("Sent %q to CLI (took %v).", cmd, time.Now().Sub(start))
 
 	return nil
 }
@@ -234,6 +242,7 @@ func mustAtoi(s string) uint32 {
 }
 
 var symRE = regexp.MustCompile(`\[<([[:xdigit:]]{8})>\] \((.*?)\+0x([[:xdigit:]]+)/`)
+var taskRE = regexp.MustCompile(`\] Task\s+\d+\s`)
 
 func getThreadDump() (map[string]addr, error) {
 	f, err := os.Open("/dev/cli")
@@ -250,20 +259,46 @@ func getThreadDump() (map[string]addr, error) {
 		wg.Done()
 	}()
 
-	inconclusive := make(map[string]struct{})
+	const markTimeout = 15 * time.Second
+	mark := time.NewTimer(markTimeout)
+	tasks := 0
+
+	inconclusive := map[string]struct{}{
+		"MonitorProcess": struct{}{},
+		"cb_ioctl":       struct{}{},
+	}
+
 	ret := make(map[string]addr)
-	for line := range recv {
-		for _, m := range symRE.FindAllStringSubmatch(line, -1) {
-			abs, sym, off := mustAtoi(m[1]), m[2], mustAtoi(m[3])
-			symaddr := addr(abs - off)
-			if old, ok := ret[sym]; ok && old != symaddr {
-				if _, iok := inconclusive[sym]; !iok {
-					warning.Printf("Inconclusive address for %q: %08x (previous) vs. %08x (current). Ignoring symbol.", sym, old, symaddr)
-					inconclusive[sym] = struct{}{}
+F:
+	for {
+		select {
+		case <-mark.C:
+			log.Printf("Still here (got %d tasks so far).", tasks)
+			mark.Reset(markTimeout)
+
+		case line, ok := <-recv:
+			if !ok {
+				break F
+			}
+
+			if taskRE.MatchString(line) {
+				tasks++
+				continue F
+			}
+
+			for _, m := range symRE.FindAllStringSubmatch(line, -1) {
+				abs, sym, off := mustAtoi(m[1]), m[2], mustAtoi(m[3])
+				symaddr := addr(abs - off)
+				if old, ok := ret[sym]; ok && old != symaddr {
+					if _, iok := inconclusive[sym]; !iok {
+						warning.Printf("Inconclusive address for %q: %08x (previous) vs. %08x (current). Ignoring symbol.", sym, old, symaddr)
+						inconclusive[sym] = struct{}{}
+					}
+				} else if !ok {
+					log.Printf("Discovered %q at 0x%08x.", sym, symaddr)
+					ret[sym] = symaddr
+					mark.Reset(markTimeout)
 				}
-			} else if !ok {
-				log.Printf("Discovered %q at 0x%08x", sym, symaddr)
-				ret[sym] = symaddr
 			}
 		}
 	}
@@ -275,6 +310,32 @@ func getThreadDump() (map[string]addr, error) {
 
 	for sym, _ := range inconclusive {
 		delete(ret, sym)
+	}
+
+	return ret, nil
+}
+
+func getDriverSymbols() (map[string]addr, error) {
+	f, err := elf.Open("/basic/dtv_driver.ko") // Not all copies are readable.
+	if err != nil {
+		return nil, fmt.Errorf("can't open dtv_driver: %v", err)
+	}
+
+	syms, err := f.Symbols()
+	if err != nil {
+		return nil, fmt.Errorf("can't determine dtv_driver's symbols: %v", err)
+	}
+
+	ret := make(map[string]addr)
+	for _, sym := range syms {
+		if int(sym.Section) >= len(f.Sections) {
+			continue
+		}
+		section := f.Sections[sym.Section]
+		if sym.Name == "" || section.Name != ".text" || sym.Value == 0 || sym.Size == 0 {
+			continue
+		}
+		ret[sym.Name] = addr(sym.Value)
 	}
 
 	return ret, nil
@@ -329,10 +390,7 @@ func getKernelVersion() (string, error) {
 	return string(v), err
 }
 
-const targetSymbol = "CLI_CmdList" // XXX
-
 func getTargetAddr() (addr, error) {
-	// XXX: correlate with dtv_mod.ko's symbols
 	kver, err := getKernelVersion()
 	if err != nil {
 		return addr(0), fmt.Errorf("can't determine running kernel: %v", err)
@@ -340,11 +398,11 @@ func getTargetAddr() (addr, error) {
 
 	if c := getCache(); c != nil {
 		if c.KernelVersion != kver {
-			warning.Printf("Cached kernel version (%q) doesn't match running kernel (%q)", c.KernelVersion, kver)
+			warning.Printf("Cached kernel version (%q) doesn't match running kernel (%q), ignoring.", c.KernelVersion, kver)
 		} else if c.TargetSymbol != targetSymbol {
-			warning.Printf("Cache symbol name (%q) doesn't match expected (%q)", c.TargetSymbol, targetSymbol)
+			warning.Printf("Cache symbol name (%q) doesn't match expected (%q), ignoring.", c.TargetSymbol, targetSymbol)
 		} else {
-			log.Printf("Loaded target symbol %q = 0x%08x from cache, delete %q if this is incorrect", targetSymbol, c.TargetAddr, cacheFile)
+			log.Printf("Loaded target symbol %q = 0x%08x from cache, delete %q if this is incorrect.", targetSymbol, c.TargetAddr, cacheFile)
 			return c.TargetAddr, nil
 		}
 	}
@@ -355,16 +413,37 @@ func getTargetAddr() (addr, error) {
 		return addr(0), fmt.Errorf("can't acquire thread dump: %v", err)
 	}
 
-	a, ok := runsyms[targetSymbol]
-	if !ok {
-		return addr(0), fmt.Errorf("symbol %q not found (in %#v)", targetSymbol, runsyms)
+	drvsyms, err := getDriverSymbols()
+	if err != nil {
+		return addr(0), fmt.Errorf("can't get symbols from dtv driver: %v", err)
 	}
 
-	if err := putCache(&cache{KernelVersion: kver, TargetSymbol: targetSymbol, TargetAddr: a}); err != nil {
+	var offset addr
+	offsym := ""
+	for sym, dval := range drvsyms {
+		rval, ok := runsyms[sym]
+		if !ok {
+			continue
+		}
+		soff := rval - dval
+		if offset != addr(0) && offset != soff {
+			return addr(0), fmt.Errorf("inconclusive symbol offset: 0x%08x (previous, for %q) vs. 0x%08x (now, for %q)", offset, offsym, soff, sym)
+		}
+		offset = soff
+		offsym = sym
+	}
+
+	dval, ok := drvsyms[targetSymbol]
+	if !ok {
+		return addr(0), fmt.Errorf("symbol %q not found in driver", targetSymbol)
+	}
+	ret := dval + offset
+
+	if err := putCache(&cache{KernelVersion: kver, TargetSymbol: targetSymbol, TargetAddr: ret}); err != nil {
 		warning.Printf("Can't store cache: %v", err)
 	}
 
-	return a, nil
+	return ret, nil
 }
 
 func main() {
@@ -380,7 +459,7 @@ func main() {
 		var err error
 		loadAddr, err = getTargetAddr()
 		if err != nil {
-			log.Fatalf("Load address was not specified but can't determine target address: %v", err)
+			log.Fatalf("Can't determine load address: %v.", err)
 		}
 	}
 
@@ -398,8 +477,25 @@ func main() {
 		os.Exit(0)
 	}
 
-	for i := 0; i < len(data); i += 4 {
-		cmd := fmt.Sprintf("w 0x%08x 0x%02x%02x%02x%02x", uint(loadAddr)+uint(i), data[i+3], data[i+2], data[i+1], data[i])
-		fmt.Printf("adb shell cli_shell %s < /dev/null\n", cmd)
+	f, err := os.Open("/dev/cli")
+	if err != nil {
+		log.Fatalf("Can't open CLI: %v.", err)
+	}
+	defer f.Close()
+
+	if *flagWrite {
+		for i := 0; i < len(data); i += 4 {
+			cmd := fmt.Sprintf("w 0x%08x 0x%02x%02x%02x%02x", uint(loadAddr)+uint(i), data[i+3], data[i+2], data[i+1], data[i])
+			if err := sendString(f, cmd); err != nil {
+				log.Fatalf("Can't send write command %q to CLI: %v.", cmd, err)
+			}
+		}
+	}
+
+	if *flagTrigger {
+		if err := sendString(f, triggerCmd); err != nil {
+			log.Fatalf("Can't send trigger command %q to CLI: %v", triggerCmd, err)
+		}
+		log.Printf("Executed %s.", *flagAsset)
 	}
 }
