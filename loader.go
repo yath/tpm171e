@@ -29,7 +29,7 @@ var (
 	flagDump        = flag.String("dump", "", "Dump final relocated binary to given filename and exit.")
 	flagWrite       = flag.Bool("write", true, "Write relocated binary to load address.")
 	flagTriggerCmd  = flag.String("trigger_cmd", "b.ver", "CLI trigger command that causes execution of --load_addr.")
-	flagTriggerExec = flag.String("trigger_exec", "/system/bin/sh", "Command and arguments of the binary that replaces this program after triggering (i.e. is execve()'d).")
+	flagTriggerExec = flag.String("trigger_exec", "/system/bin/sh -i", "Command and arguments of the binary that replaces this program after triggering (i.e. is execve()'d).")
 	flagTrigger     = flag.Bool("trigger", true, "Trigger the --trigger_cmd and execute --trigger_exec.")
 )
 
