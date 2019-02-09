@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"debug/elf"
 	"encoding/binary"
-	"encoding/gob"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -371,7 +371,7 @@ func getCache() *cache {
 	defer f.Close()
 
 	var ret cache
-	if err := gob.NewDecoder(f).Decode(&ret); err != nil {
+	if err := json.NewDecoder(f).Decode(&ret); err != nil {
 		warning.Printf("Can't decode %v as %T, ignoring: %v", cacheFile, &ret, err)
 		return nil
 	}
@@ -385,7 +385,7 @@ func putCache(c *cache) error {
 		return fmt.Errorf("can't create cache file: %v", err)
 	}
 
-	if err := gob.NewEncoder(f).Encode(c); err != nil {
+	if err := json.NewEncoder(f).Encode(c); err != nil {
 		os.Remove(cacheFile)
 		return fmt.Errorf("can't encode %T%#v to %v: %v", c, c, f, err)
 	}
