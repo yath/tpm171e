@@ -293,15 +293,15 @@ F:
 			for _, m := range symRE.FindAllStringSubmatch(line, -1) {
 				abs, sym, off := mustAtoi(m[1]), m[2], mustAtoi(m[3])
 				symaddr := addr(abs - off)
-				if old, ok := ret[sym]; ok && old != symaddr {
-					if _, iok := inconclusive[sym]; !iok {
+				if _, iok := inconclusive[sym]; !iok {
+					if old, ok := ret[sym]; ok && old != symaddr {
 						warning.Printf("Inconclusive address for %q: %08x (previous) vs. %08x (current). Ignoring symbol.", sym, old, symaddr)
 						inconclusive[sym] = struct{}{}
+					} else if !ok {
+						info.Printf("Discovered %q at 0x%08x.", sym, symaddr)
+						ret[sym] = symaddr
+						mark.Reset(markTimeout)
 					}
-				} else if !ok {
-					info.Printf("Discovered %q at 0x%08x.", sym, symaddr)
-					ret[sym] = symaddr
-					mark.Reset(markTimeout)
 				}
 			}
 		}
