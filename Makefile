@@ -92,7 +92,7 @@ assets.go: findsym.elf
 	go-bindata -nocompress -pkg main -o $@ $^
 
 loader: loader.go assets.go
-	$(GO) build -o $@ $^
+	GOARCH=arm $(GO) build -o $@ $^
 
 .PHONY: run-cli
 run-cli: cli
@@ -100,4 +100,4 @@ run-cli: cli
 
 .PHONY: clean
 clean:
-	rm -f *.o *.bin *.bin.h *.addr.h buildts.S dtv_driver.lds threaddump.lds kernel.lds assets.go $(ALL_BINARY_TARGETS)
+	rm -f *.o *.bin *.bin.h *.addr.h findsym.elf buildts.S dtv_driver.lds threaddump.lds kernel.lds assets.go $(ALL_BINARY_TARGETS)

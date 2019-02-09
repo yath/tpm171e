@@ -15,6 +15,7 @@ import (
 	"os/exec"
 	"regexp"
 	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -22,13 +23,14 @@ import (
 )
 
 const targetSymbol = "_CmdVersion"
-const triggerCmd = "b.ver"
 
 var flagAsset = flag.String("asset", "findsym.elf", "name of the bundled asset")
 var flagLoadAddr = flag.Uint("load_addr", 0, "load address (i.e. "+targetSymbol+"). 0 determines it automatically.")
 var flagDump = flag.String("dump", "", "dump final relocated binary to given filename")
 var flagWrite = flag.Bool("write", true, "write relocated binary to determined load address")
-var flagTrigger = flag.Bool("trigger", true, "trigger loaded binary with "+triggerCmd)
+var flagTriggerCmd = flag.String("trigger_cmd", "b.ver", "trigger command that executes "+targetSymbol)
+var flagTriggerExec = flag.String("trigger_exec", "/system/bin/sh", "execve() given binary with args after triggering")
+var flagTrigger = flag.Bool("trigger", true, "trigger loaded binary with --trigger_cmd and execve --trigger_exec")
 
 var warning = log.New(os.Stderr, "WARNING: ", log.LstdFlags)
 
@@ -315,7 +317,16 @@ F:
 	return ret, nil
 }
 
-func getDriverSymbols() (map[string]addr, error) {
+type addrWithLen struct {
+	Addr addr
+	Len  uint32
+}
+
+func (a addrWithLen) String() string {
+	return fmt.Sprintf("0x%08x (%d bytes)", a.Addr, a.Len)
+}
+
+func getDriverSymbols() (map[string]addrWithLen, error) {
 	f, err := elf.Open("/basic/dtv_driver.ko") // Not all copies are readable.
 	if err != nil {
 		return nil, fmt.Errorf("can't open dtv_driver: %v", err)
@@ -326,7 +337,7 @@ func getDriverSymbols() (map[string]addr, error) {
 		return nil, fmt.Errorf("can't determine dtv_driver's symbols: %v", err)
 	}
 
-	ret := make(map[string]addr)
+	ret := make(map[string]addrWithLen)
 	for _, sym := range syms {
 		if int(sym.Section) >= len(f.Sections) {
 			continue
@@ -335,7 +346,7 @@ func getDriverSymbols() (map[string]addr, error) {
 		if sym.Name == "" || section.Name != ".text" || sym.Value == 0 || sym.Size == 0 {
 			continue
 		}
-		ret[sym.Name] = addr(sym.Value)
+		ret[sym.Name] = addrWithLen{addr(sym.Value), uint32(sym.Size)}
 	}
 
 	return ret, nil
@@ -344,7 +355,7 @@ func getDriverSymbols() (map[string]addr, error) {
 type cache struct {
 	KernelVersion string
 	TargetSymbol  string
-	TargetAddr    addr
+	TargetAddr    addrWithLen
 }
 
 const cacheFile = "/data/local/tmp/targetcache"
@@ -390,10 +401,12 @@ func getKernelVersion() (string, error) {
 	return string(v), err
 }
 
-func getTargetAddr() (addr, error) {
+func getTargetAddr() (addrWithLen, error) {
+	var zero addrWithLen
+
 	kver, err := getKernelVersion()
 	if err != nil {
-		return addr(0), fmt.Errorf("can't determine running kernel: %v", err)
+		return zero, fmt.Errorf("can't determine running kernel: %v", err)
 	}
 
 	if c := getCache(); c != nil {
@@ -402,7 +415,7 @@ func getTargetAddr() (addr, error) {
 		} else if c.TargetSymbol != targetSymbol {
 			warning.Printf("Cache symbol name (%q) doesn't match expected (%q), ignoring.", c.TargetSymbol, targetSymbol)
 		} else {
-			log.Printf("Loaded target symbol %q = 0x%08x from cache, delete %q if this is incorrect.", targetSymbol, c.TargetAddr, cacheFile)
+			log.Printf("Loaded target symbol %q = %v from cache, delete %q if this is incorrect.", targetSymbol, c.TargetAddr, cacheFile)
 			return c.TargetAddr, nil
 		}
 	}
@@ -410,12 +423,12 @@ func getTargetAddr() (addr, error) {
 	warning.Printf("Need to acquire a thread dump, this might take a minute or two.")
 	runsyms, err := getThreadDump()
 	if err != nil {
-		return addr(0), fmt.Errorf("can't acquire thread dump: %v", err)
+		return zero, fmt.Errorf("can't acquire thread dump: %v", err)
 	}
 
 	drvsyms, err := getDriverSymbols()
 	if err != nil {
-		return addr(0), fmt.Errorf("can't get symbols from dtv driver: %v", err)
+		return zero, fmt.Errorf("can't get symbols from dtv driver: %v", err)
 	}
 
 	var offset addr
@@ -425,9 +438,9 @@ func getTargetAddr() (addr, error) {
 		if !ok {
 			continue
 		}
-		soff := rval - dval
+		soff := rval - dval.Addr
 		if offset != addr(0) && offset != soff {
-			return addr(0), fmt.Errorf("inconclusive symbol offset: 0x%08x (previous, for %q) vs. 0x%08x (now, for %q)", offset, offsym, soff, sym)
+			return zero, fmt.Errorf("inconclusive symbol offset: 0x%08x (previous, for %q) vs. 0x%08x (now, for %q)", offset, offsym, soff, sym)
 		}
 		offset = soff
 		offsym = sym
@@ -435,9 +448,9 @@ func getTargetAddr() (addr, error) {
 
 	dval, ok := drvsyms[targetSymbol]
 	if !ok {
-		return addr(0), fmt.Errorf("symbol %q not found in driver", targetSymbol)
+		return zero, fmt.Errorf("symbol %q not found in driver", targetSymbol)
 	}
-	ret := dval + offset
+	ret := addrWithLen{dval.Addr + offset, dval.Len}
 
 	if err := putCache(&cache{KernelVersion: kver, TargetSymbol: targetSymbol, TargetAddr: ret}); err != nil {
 		warning.Printf("Can't store cache: %v", err)
@@ -455,17 +468,27 @@ func main() {
 	}
 
 	loadAddr := addr(*flagLoadAddr)
+	loadLen := uint32(0)
 	if loadAddr == addr(0) {
-		var err error
-		loadAddr, err = getTargetAddr()
+		tgt, err := getTargetAddr()
 		if err != nil {
 			log.Fatalf("Can't determine load address: %v.", err)
 		}
+		loadAddr, loadLen = tgt.Addr, tgt.Len
 	}
 
 	data, err := loadELF(a, loadAddr)
 	if err != nil {
 		log.Fatalf("Can't load ELF: %v", err)
+	}
+
+	if loadLen > 0 {
+		l := uint32(len(data))
+		if l > loadLen {
+			log.Fatalf("Binary size (%d bytes) exceeds target length (%d). Run with -dump and investigate what to strip.", l, loadLen)
+		}
+
+		log.Printf("Linked ELF: %d bytes, available at target: %d (room for %d more bytes)", l, loadLen, loadLen-l)
 	}
 
 	if *flagDump != "" {
@@ -493,9 +516,20 @@ func main() {
 	}
 
 	if *flagTrigger {
-		if err := sendString(f, triggerCmd); err != nil {
-			log.Fatalf("Can't send trigger command %q to CLI: %v", triggerCmd, err)
+		if err := sendString(f, *flagTriggerCmd); err != nil {
+			log.Fatalf("Can't send trigger command %q to CLI: %v", *flagTriggerCmd, err)
 		}
 		log.Printf("Executed %s.", *flagAsset)
+
+		if ex := *flagTriggerExec; ex != "" {
+			args := strings.Fields(ex)
+			argv0 := args[0]
+			env := os.Environ()
+			log.Printf("Calling execve(argv0=%q, args=%q, env=%q). Goodbye!", argv0, args, env)
+			if err := syscall.Exec(argv0, args, env); err != nil {
+				log.Fatalf("Exec failed: %v", err)
+			}
+			log.Panic("Should not be here")
+		}
 	}
 }
