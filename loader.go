@@ -525,10 +525,10 @@ func main() {
 
 		if ex := *flagTriggerExec; ex != "" {
 			args := strings.Fields(ex)
-			argv0 := args[0]
+			prog := args[0]
 			env := os.Environ()
-			info.Printf("Calling execve(argv0=%q, args=%q, env=%q). Goodbye!", argv0, args, env)
-			if err := syscall.Exec(argv0, args, env); err != nil {
+			info.Printf("Executing %q with args=%q, env=%q. Goodbye!", prog, args, env)
+			if err := syscall.Exec(prog, args, env); err != nil {
 				log.Fatalf("Exec failed: %v", err)
 			}
 			log.Panic("Should not be here")
