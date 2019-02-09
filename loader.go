@@ -25,7 +25,7 @@ import (
 var (
 	flagAsset       = flag.String("asset", "getroot.elf", "Name of the bundled asset to load.")
 	flagLoadSymbol  = flag.String("load_symbol", "_CmdVersion", "Symbol to load asset at.")
-	flagLoadAddr    = flag.Uint("load_addr", 0, "Address to load asset at, or 0 if --load_symbol's addres sshould be determined at run time.")
+	flagLoadAddr    = flag.Uint("load_addr", 0, "Address to load asset at, or 0 if --load_symbol's address should be determined at run time.")
 	flagDump        = flag.String("dump", "", "Dump final relocated binary to given filename and exit.")
 	flagWrite       = flag.Bool("write", true, "Write relocated binary to load address.")
 	flagTriggerCmd  = flag.String("trigger_cmd", "b.ver", "CLI trigger command that causes execution of --load_addr.")
