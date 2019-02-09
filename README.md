@@ -21,6 +21,14 @@ speaking the adb protocol (you’ll need a USB A-to-A cable). This seems to alwa
 case in fastboot mode, out of which you can (apparently only) get with `fastboot continue`.
 Don’t type `reboot bootloader`!
 
+## root
+
+`make` the `loader` target and `adb push` it to `/data/local/tmp` or so. The first run
+takes about two minutes, as the loader needs to acquire a thread dump to locate the
+running kernel module address. It relocates the bundled `getroot.elf` to the address
+of the `_CmdVersion` handler, writes it there, executes it via `b.ver` and `execve()`s
+a shell.
+
 ## cli
 
 ### Technical details
