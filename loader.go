@@ -484,15 +484,6 @@ func main() {
 		log.Fatalf("Can't load ELF: %v", err)
 	}
 
-	if loadLen > 0 {
-		l := uint32(len(data))
-		if l > loadLen {
-			log.Fatalf("Binary size (%d bytes) exceeds target length (%d). Run with -dump and investigate what to strip.", l, loadLen)
-		}
-
-		info.Printf("Linked ELF: %d bytes, available at target: %d (room for %d more bytes)", l, loadLen, loadLen-l)
-	}
-
 	if *flagDump != "" {
 		if err := ioutil.WriteFile(*flagDump, data, 0666); err != nil {
 			log.Fatalf("Can't dump data: %v", err)
@@ -500,6 +491,15 @@ func main() {
 		info.Printf("Output written to %q", *flagDump)
 		info.Printf("arm-none-eabi-objdump -marm -bbinary -EL -D --adjust-vma=0x%08x %s", loadAddr, *flagDump)
 		os.Exit(0)
+	}
+
+	if loadLen > 0 {
+		l := uint32(len(data))
+		if l > loadLen {
+			log.Fatalf("Binary size (%d bytes) exceeds target length (%d). Run with -dump and investigate what to strip.", l, loadLen)
+		}
+
+		info.Printf("Linked ELF: %d bytes, available at target: %d (room for %d more bytes)", l, loadLen, loadLen-l)
 	}
 
 	f, err := os.Open("/dev/cli")
