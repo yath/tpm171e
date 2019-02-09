@@ -22,17 +22,19 @@ import (
 	"unsafe"
 )
 
-const targetSymbol = "_CmdVersion"
+var (
+	flagAsset       = flag.String("asset", "getroot.elf", "Name of the bundled asset to load.")
+	flagLoadSymbol  = flag.String("load_symbol", "_CmdVersion", "Symbol to load asset at.")
+	flagLoadAddr    = flag.Uint("load_addr", 0, "Address to load asset at, or 0 if --load_symbol's addres sshould be determined at run time.")
+	flagDump        = flag.String("dump", "", "Dump final relocated binary to given filename and exit.")
+	flagWrite       = flag.Bool("write", true, "Write relocated binary to load address.")
+	flagTriggerCmd  = flag.String("trigger_cmd", "b.ver", "CLI trigger command that causes execution of --load_addr.")
+	flagTriggerExec = flag.String("trigger_exec", "/system/bin/sh", "Command and arguments of the binary that replaces this program after triggering (i.e. is execve()'d).")
+	flagTrigger     = flag.Bool("trigger", true, "Trigger the --trigger_cmd and execute --trigger_exec.")
+)
 
-var flagAsset = flag.String("asset", "getroot.elf", "name of the bundled asset")
-var flagLoadAddr = flag.Uint("load_addr", 0, "load address (i.e. "+targetSymbol+"). 0 determines it automatically.")
-var flagDump = flag.String("dump", "", "dump final relocated binary to given filename")
-var flagWrite = flag.Bool("write", true, "write relocated binary to determined load address")
-var flagTriggerCmd = flag.String("trigger_cmd", "b.ver", "trigger command that executes "+targetSymbol)
-var flagTriggerExec = flag.String("trigger_exec", "/system/bin/sh", "execve() given binary with args after triggering")
-var flagTrigger = flag.Bool("trigger", true, "trigger loaded binary with --trigger_cmd and execve --trigger_exec")
-
-var warning = log.New(os.Stderr, "WARNING: ", log.LstdFlags)
+var info = log.New(os.Stderr, "INFO: ", log.Ltime)
+var warning = log.New(os.Stderr, "WARNING: ", log.Ltime)
 
 // from debug/elf/file.go.
 func applyRelocationsARM(f *elf.File, symbols []elf.Symbol, dst []byte, rels []byte, daddr addr) error {
@@ -165,7 +167,7 @@ func sendString(f *os.File, cmd string) error {
 	if errno != 0 {
 		return fmt.Errorf("ioctl(%v, INPUT_STRING, %q) failed: %v", f, cmd, errno)
 	}
-	log.Printf("Sent %q to CLI (took %v).", cmd, time.Now().Sub(start))
+	info.Printf("Sent %q to CLI (took %v).", cmd, time.Now().Sub(start))
 
 	return nil
 }
@@ -275,7 +277,7 @@ F:
 	for {
 		select {
 		case <-mark.C:
-			log.Printf("Still here (got %d tasks so far).", tasks)
+			info.Printf("Still here (got %d tasks so far).", tasks)
 			mark.Reset(markTimeout)
 
 		case line, ok := <-recv:
@@ -297,7 +299,7 @@ F:
 						inconclusive[sym] = struct{}{}
 					}
 				} else if !ok {
-					log.Printf("Discovered %q at 0x%08x.", sym, symaddr)
+					info.Printf("Discovered %q at 0x%08x.", sym, symaddr)
 					ret[sym] = symaddr
 					mark.Reset(markTimeout)
 				}
@@ -310,7 +312,7 @@ F:
 		return nil, fmt.Errorf("can't send CLI command: %v", err)
 	}
 
-	for sym, _ := range inconclusive {
+	for sym := range inconclusive {
 		delete(ret, sym)
 	}
 
@@ -412,10 +414,10 @@ func getTargetAddr() (addrWithLen, error) {
 	if c := getCache(); c != nil {
 		if c.KernelVersion != kver {
 			warning.Printf("Cached kernel version (%q) doesn't match running kernel (%q), ignoring.", c.KernelVersion, kver)
-		} else if c.TargetSymbol != targetSymbol {
-			warning.Printf("Cache symbol name (%q) doesn't match expected (%q), ignoring.", c.TargetSymbol, targetSymbol)
+		} else if c.TargetSymbol != *flagLoadSymbol {
+			warning.Printf("Cache symbol name (%q) doesn't match expected (%q), ignoring.", c.TargetSymbol, *flagLoadSymbol)
 		} else {
-			log.Printf("Loaded target symbol %q = %v from cache, delete %q if this is incorrect.", targetSymbol, c.TargetAddr, cacheFile)
+			info.Printf("Loaded target symbol %q = %v from cache, delete %q if this is incorrect.", *flagLoadSymbol, c.TargetAddr, cacheFile)
 			return c.TargetAddr, nil
 		}
 	}
@@ -446,13 +448,13 @@ func getTargetAddr() (addrWithLen, error) {
 		offsym = sym
 	}
 
-	dval, ok := drvsyms[targetSymbol]
+	dval, ok := drvsyms[*flagLoadSymbol]
 	if !ok {
-		return zero, fmt.Errorf("symbol %q not found in driver", targetSymbol)
+		return zero, fmt.Errorf("symbol %q not found in driver", *flagLoadSymbol)
 	}
 	ret := addrWithLen{dval.Addr + offset, dval.Len}
 
-	if err := putCache(&cache{KernelVersion: kver, TargetSymbol: targetSymbol, TargetAddr: ret}); err != nil {
+	if err := putCache(&cache{KernelVersion: kver, TargetSymbol: *flagLoadSymbol, TargetAddr: ret}); err != nil {
 		warning.Printf("Can't store cache: %v", err)
 	}
 
@@ -488,15 +490,15 @@ func main() {
 			log.Fatalf("Binary size (%d bytes) exceeds target length (%d). Run with -dump and investigate what to strip.", l, loadLen)
 		}
 
-		log.Printf("Linked ELF: %d bytes, available at target: %d (room for %d more bytes)", l, loadLen, loadLen-l)
+		info.Printf("Linked ELF: %d bytes, available at target: %d (room for %d more bytes)", l, loadLen, loadLen-l)
 	}
 
 	if *flagDump != "" {
 		if err := ioutil.WriteFile(*flagDump, data, 0666); err != nil {
 			log.Fatalf("Can't dump data: %v", err)
 		}
-		log.Printf("Output written to %q", *flagDump)
-		log.Printf("arm-none-eabi-objdump -marm -bbinary -EL -D --adjust-vma=0x%08x %s", loadAddr, *flagDump)
+		info.Printf("Output written to %q", *flagDump)
+		info.Printf("arm-none-eabi-objdump -marm -bbinary -EL -D --adjust-vma=0x%08x %s", loadAddr, *flagDump)
 		os.Exit(0)
 	}
 
@@ -519,13 +521,13 @@ func main() {
 		if err := sendString(f, *flagTriggerCmd); err != nil {
 			log.Fatalf("Can't send trigger command %q to CLI: %v", *flagTriggerCmd, err)
 		}
-		log.Printf("Executed %s.", *flagAsset)
+		info.Printf("Executed %s.", *flagAsset)
 
 		if ex := *flagTriggerExec; ex != "" {
 			args := strings.Fields(ex)
 			argv0 := args[0]
 			env := os.Environ()
-			log.Printf("Calling execve(argv0=%q, args=%q, env=%q). Goodbye!", argv0, args, env)
+			info.Printf("Calling execve(argv0=%q, args=%q, env=%q). Goodbye!", argv0, args, env)
 			if err := syscall.Exec(argv0, args, env); err != nil {
 				log.Fatalf("Exec failed: %v", err)
 			}
