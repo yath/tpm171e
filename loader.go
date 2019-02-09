@@ -24,7 +24,7 @@ import (
 
 const targetSymbol = "_CmdVersion"
 
-var flagAsset = flag.String("asset", "findsym.elf", "name of the bundled asset")
+var flagAsset = flag.String("asset", "getroot.elf", "name of the bundled asset")
 var flagLoadAddr = flag.Uint("load_addr", 0, "load address (i.e. "+targetSymbol+"). 0 determines it automatically.")
 var flagDump = flag.String("dump", "", "dump final relocated binary to given filename")
 var flagWrite = flag.Bool("write", true, "write relocated binary to determined load address")

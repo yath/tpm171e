@@ -1,4 +1,4 @@
-ALL_BINARY_TARGETS := exploit decrypt cli kernelutil loader
+ALL_BINARY_TARGETS := decrypt cli kernelutil loader
 
 .PHONY: all
 all: $(ALL_BINARY_TARGETS)
@@ -19,14 +19,31 @@ CROSS := arm-none-eabi-
 
 RUN_CLI_DIR := /data/local/tmp
 
-decrypt: decrypt.c
-	$(CC) $(CFLAGS) -o $@ $< -lcrypto
+## root shell
+
+getroot.elf: getroot.c getroot.lds
+	$(CROSS)$(CC) $(TARGET_CFLAGS) -Os -ffreestanding -nostdlib -o $@ -Wl,-r -T getroot.lds $<
+
+assets.go: getroot.elf
+	go-bindata -nocompress -pkg main -o $@ $^
+
+loader: loader.go assets.go
+	GOARCH=arm $(GO) build -o $@ $^
+
+## utils
+
+cli: cli.go
+	GOARCH=arm $(GO) build -o $@ $<
 
 kernelutil: kernelutil.go
 	$(GO) build -o $@ $<
 
-cli: cli.go
-	GOARCH=arm $(GO) build -o $@ $<
+## firmware unpacking
+
+decrypt: decrypt.c
+	$(CC) $(CFLAGS) -o $@ $< -lcrypto
+
+## debugging stuff
 
 # _Cust_dump_all_thread (b.da)
 threaddump.txt:
@@ -64,40 +81,10 @@ dtv_driver.lds: dtv_driver.ko threaddump.lds
 	$(PERL) -nE 'say "$$2 = 0x$$1;" if /^([0-9a-f]+)\s+.\s.*\s(\S+)$$/ && hex($$1) > 0' | \
 	sort -k3 > $@
 
-LOAD_SYM=_CmdVersion
-shellcode.lds: shellcode.lds.in dtv_driver.lds
-	loadaddr=$$($(PERL) -nE 'say $$1 if /^$(LOAD_SYM) = (.*);/' < dtv_driver.lds) \
-	$(PERL) -pe 's/#LOADADDR#/$$ENV{loadaddr}/g' < $< > $@
-
-shellcode.o: shellcode.lds dtv_driver.lds kernel.lds shellcode.S
-	echo '.ascii "Built at $(shell date)"' > buildts.S
-	$(CROSS)$(CC) $(CFLAGS) -nostdlib -o $@ $^
-
-shellcode.bin: shellcode.o
-	$(CROSS)$(OBJCOPY) -O binary -j .text --reverse-bytes=4 $< $@
-
-shellcode.bin.h: shellcode.bin
-	$(XXD) -i $^ > $@
-
-shellcode.addr.h: shellcode.o
-	$(READELF) -e $< | $(AWK) '/Entry point/ { print "tgt_addr_t shellcode_addr = "$$NF";" }' > $@
-
-exploit: main.c shellcode.bin.h shellcode.addr.h
-	$(CC) $(CFLAGS) -I$(CURDIR) -o $@ $<
-
-findsym.elf: findsym.c findsym.lds
-	$(CROSS)$(CC) $(TARGET_CFLAGS) -Os -ffreestanding -nostdlib -o $@ -Wl,-r -T findsym.lds $<
-
-assets.go: findsym.elf
-	go-bindata -nocompress -pkg main -o $@ $^
-
-loader: loader.go assets.go
-	GOARCH=arm $(GO) build -o $@ $^
-
 .PHONY: run-cli
 run-cli: cli
 	$(ADB) push cli $(RUN_CLI_DIR)/cli && $(ADB) shell $(RUN_CLI_DIR)/cli $(CLICOMMAND)
 
 .PHONY: clean
 clean:
-	rm -f *.o *.bin *.bin.h *.addr.h findsym.elf buildts.S dtv_driver.lds threaddump.lds kernel.lds assets.go $(ALL_BINARY_TARGETS)
+	rm -f getroot.elf dtv_driver.lds threaddump.lds kernel.lds assets.go $(ALL_BINARY_TARGETS)

@@ -1,3 +1,0 @@
-SECTIONS {
-    .text (#LOADADDR#) : ALIGN(0) { *(.text) }
-}
