@@ -400,7 +400,7 @@ func putCache(c *cache) error {
 
 func getKernelVersion() (string, error) {
 	v, err := ioutil.ReadFile("/proc/version")
-	return string(v), err
+	return strings.TrimSpace(string(v)), err
 }
 
 func getTargetAddr() (addrWithLen, error) {
