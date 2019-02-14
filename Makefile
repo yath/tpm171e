@@ -1,4 +1,4 @@
-ALL_BINARY_TARGETS := decrypt cli kernelutil loader
+ALL_BINARY_TARGETS := cli kernelutil loader
 
 .PHONY: all
 all: $(ALL_BINARY_TARGETS)
@@ -67,6 +67,15 @@ zImage:
 dtv_driver.ko:
 	echo "Grab $@ from firmware dump (all copies are the same)"; exit 1
 
+recovery-resource.dat:
+	adb pull /system/etc/recovery-resource.dat $@
+
+keyfile.txt: recovery-resource.dat
+	unzip $< $@
+
+passfile.txt: keyfile.txt
+	dd if=$< of=$@ bs=127 count=1
+
 kernel.lds: zImage kernelutil
 	./kernelutil -dump_symtab=$@ $<
 
@@ -87,4 +96,4 @@ run-cli: cli
 
 .PHONY: clean
 clean:
-	rm -f getroot.elf dtv_driver.lds threaddump.lds kernel.lds assets.go $(ALL_BINARY_TARGETS)
+	rm -f getroot.elf dtv_driver.lds threaddump.lds kernel.lds assets.go keyfile.txt passfile.txt $(ALL_BINARY_TARGETS)

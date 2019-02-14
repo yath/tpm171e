@@ -6,6 +6,7 @@ abootimg=abootimg       # https://github.com/ggrandou/abootimg
 unsquashfs=unsquashfs   # https://android.googlesource.com/platform/external/squashfs-tools
 ext2rd=ext2rd           # https://github.com/qmfrederik/extfstools
 cpio=cpio
+openssl=openssl
 
 # https://toengel.net/philipsblog/firmware-download/
 if [[ "$#" -lt 1 ]]; then
@@ -13,10 +14,10 @@ if [[ "$#" -lt 1 ]]; then
     exit 1
 fi
 
-decrypt="$(dirname "$(readlink -f "$0")")/decrypt"
-if [[ ! -x "$decrypt" ]]; then
-    echo "decrypt binary not found (looked at $decrypt)" >&2
-    echo "try: make -C $(dirname "$decrypt") decrypt" >&2
+passfile="$(dirname "$(readlink -f "$0")")/passfile.txt"
+if [[ ! -e "$passfile" ]]; then
+    echo "passfile.txt not found (looked at $passfile)" >&2
+    echo "try: make -C $(dirname "$passfile") $(basename "$passfile")" >&2
     exit 1
 fi
 
@@ -52,15 +53,9 @@ rm -f "$upgfile"
 # Decrypt .zip files
 rc=0
 for enczip in "$outdir"/*.zip; do
-    if ! "$decrypt" "$enczip"; then
-        echo "Failed to decrypt $enczip" >&2
-        rc=1
-        continue
-    fi
-
     deczip="${enczip}.dec"
-    if [[ ! -e "$deczip" ]]; then
-        echo "Hmm.. $decrypt exited successfully but did not create a $deczip" >&2
+    if ! "$openssl" enc -d -aes-256-cbc -md md5 -p -pass file:"$passfile" -out "$deczip" -in "$enczip"; then
+        echo "Failed to decrypt $enczip" >&2
         rc=1
         continue
     fi
@@ -113,7 +108,7 @@ else
         initrd="${imgdir}/initrd.img"
         initrddir="${initrd%.img}"
         mkdir -p "$initrddir"
-        if ! gzip -cd "$initrd" | cpio -D "$initrddir" -id; then
+        if ! gzip -cd "$initrd" | "$cpio" -D "$initrddir" -id; then
             echo "Extracting $initrd to $initrddir failed" >&2
             rc=1
             continue
