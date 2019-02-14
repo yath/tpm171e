@@ -75,9 +75,8 @@ func applyRelocationsARM(f *elf.File, symbols []elf.Symbol, dst []byte, rels []b
 				offset -= 0x04000000
 			}
 
-			pos := uint64(daddr) + uint64(rel.Off)
-			delta := int64(sym.Value) - int64(pos)
-			offset += int32(delta)
+			pos := daddr + addr(rel.Off)
+			offset += int32(sym.Value) - int32(pos)
 
 			if offset&3 != 0 || offset <= -0x02000000 || offset >= 0x02000000 {
 				return fmt.Errorf("target offset %08x for symbol %#v out of range", offset, sym)
