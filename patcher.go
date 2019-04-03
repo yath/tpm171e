@@ -245,15 +245,15 @@ func ptrace(pid int) (func(), error) {
 	}
 
 	var ws syscall.WaitStatus
-	if _, err := syscall.Wait4(*flagPID, &ws, 0, nil); err != nil {
+	if _, err := syscall.Wait4(pid, &ws, 0, nil); err != nil {
 		return nil, fmt.Errorf("can't wait for tracee with PID %d: %v.", pid, err)
 	}
 	log.Printf("waitpid(%d) = %#v", pid, ws)
 
 	return func() {
 		log.Printf("Note: If the UI gets stuck, run pkill -CONT dtv_svc")
-		if err := syscall.PtraceDetach(*flagPID); err != nil {
-			warning.Printf("Can't detach from tracee PID %d: %v", *flagPID, err)
+		if err := syscall.PtraceDetach(pid); err != nil {
+			warning.Printf("Can't detach from tracee PID %d: %v", pid, err)
 		}
 	}, nil
 }
