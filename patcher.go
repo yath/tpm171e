@@ -154,7 +154,7 @@ func getExecutableMapping(pid int, libname string) (*addrWithLen, error) {
 	return nil, fmt.Errorf("no executable mapping of %q in %d", libname, pid)
 }
 
-// patchLLhandler patches the log level getter with the contents of retFF.
+// patchLLGetter patches the log level getter with the contents of retFF.
 func patchLLGetter(pid int, dst *addrWithLen) error {
 	data := make([]byte, dst.l)
 	n, err := syscall.PtracePeekData(pid, uintptr(dst.a), data)
