@@ -4,7 +4,7 @@
 //  make patcher && adb push patcher /data/local/tmp/patcher
 //
 // To run as root:
-// /data/local/tmp/patcher -pid="$(pidof dtv_svc|tr ' ' '\n'|sort -n|tail -n 1)"
+//  /data/local/tmp/patcher -pid="$(pidof dtv_svc|tr ' ' '\n'|sort -n|tail -n 1)"
 
 package main
 
