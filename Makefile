@@ -1,4 +1,4 @@
-ALL_BINARY_TARGETS := cli kernelutil loader
+ALL_BINARY_TARGETS := cli kernelutil loader patcher
 
 .PHONY: all
 all: $(ALL_BINARY_TARGETS)
@@ -33,6 +33,9 @@ loader: loader.go assets.go
 ## utils
 
 cli: cli.go
+	GOARCH=arm $(GO) build -o $@ $<
+
+patcher: patcher.go
 	GOARCH=arm $(GO) build -o $@ $<
 
 kernelutil: kernelutil.go
