@@ -104,7 +104,7 @@ func getExecutableMapping(pid int, libname string) (*addrWithLen, error) {
 
 	b, err := ioutil.ReadFile(fmt.Sprintf("/proc/%d/maps", pid))
 	if err != nil {
-		return nil, fmt.Errorf("can't read %d's page mappings: %v", err)
+		return nil, fmt.Errorf("can't read %d's page mappings: %v", pid, err)
 	}
 
 	bb := bytes.NewBuffer(b)
@@ -157,7 +157,7 @@ func getExecutableMapping(pid int, libname string) (*addrWithLen, error) {
 	}
 
 	if err != nil && err != io.EOF {
-		return nil, fmt.Errorf("error reading %d's mappings: %v", err)
+		return nil, fmt.Errorf("error reading %d's mappings: %v", pid, err)
 	}
 
 	return nil, fmt.Errorf("no executable mapping of %q in %d", libname, pid)
@@ -218,7 +218,7 @@ func getPIDSymAddr(pid int, elff, symbol string) (*addrWithLen, error) {
 	log.Printf("Found mapping in process: %v", m)
 
 	if sym.Value+sym.Size > uint64(m.l) {
-		return nil, fmt.Errorf("symbol %v's address (%v) + length (%d) = %d exceeds mapping size %d", sym.Value, sym.Size, sym.Value+sym.Size, m.l)
+		return nil, fmt.Errorf("symbol %v's address (%v) + length (%d) = %d exceeds mapping size %d", symbol, sym.Value, sym.Size, sym.Value+sym.Size, m.l)
 	}
 
 	off := m.a + addr(sym.Value)
@@ -233,8 +233,8 @@ type tracee struct {
 	pid int
 }
 
-func (t *tracee) String() {
-	fmt.Sprintf("%T{pid=%d}", t, t.pid)
+func (t *tracee) String() string {
+	return fmt.Sprintf("%T{pid=%d}", t, t.pid)
 }
 
 // ptraceAttach attaches to a tracee and returns a function that must be called before the program exits.
@@ -397,7 +397,7 @@ func (t *tracee) injectCode(code []byte, pc word, rs func(*armRegs)) (word, erro
 	// Set registers and code at “loc”.
 	setCodeAndRegs := func(code []byte, regs *armRegs) error {
 		if err := t.setRegs(regs); err != nil {
-			return fmt.Errorf("can't set registers for %v to %v:", t, regs, err)
+			return fmt.Errorf("can't set registers for %v to %v: %v", t, regs, err)
 		}
 
 		if err := t.poke(loc.a, code); err != nil {
@@ -409,7 +409,7 @@ func (t *tracee) injectCode(code []byte, pc word, rs func(*armRegs)) (word, erro
 
 	defer func() {
 		if err := setCodeAndRegs(origCode, origRegs); err != nil {
-			log.Printf("Warning: Unable to restore original instruction and/or registers: %v.")
+			log.Printf("Warning: Unable to restore original instruction and/or registers: %v.", err)
 			log.Printf("Tracee may become unstable. reboot soon.")
 			return
 		}
