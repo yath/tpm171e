@@ -11,6 +11,7 @@ package main
 import (
 	"bytes"
 	"debug/elf"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -28,7 +29,7 @@ var (
 	flagLLGetterELF    = flag.String("log_level_getter_elf", "/linux_rootfs/basic/libmtkapp.so", "ELF file the --log_level_getter_symbol is defined in.")
 	flagLLGetterSymbol = flag.String("log_level_getter_symbol", "a_cfg_custom_get_log_print_flag", "Symbol that returns the customer log level.")
 	flagPID            = flag.Int("pid", 0, "PID of dtv_svc.")
-	flagAction         = flag.String("action", "patch-ll-value", "Action to perform. 'patch-ll-value' to override the log level with 0xff, 'patch-ll-getter' to override the --log_level_getter_symbol entirely.")
+	flagAction         = flag.String("action", "patch-ll-value", "Action to perform. 'patch-ll-value' to override the log level with 0xff, 'patch-ll-getter' to override the --log_level_getter_symbol entirely, 'getpid' to inject a getpid() system call.")
 )
 
 // retFF is the native encoding of a subroutine that returns 0xff.
@@ -63,12 +64,20 @@ func getELFSymAddr(filename, symbol string) (*elf.Symbol, error) {
 	return ret, nil
 }
 
-// addr is a 32-bit address.
-type addr uint32
+// word is a 32-bit word.
+type word uint32
 
 // String implements fmt.Stringer.
-func (a addr) String() string {
-	return fmt.Sprintf("0x%08x", uint32(a))
+func (w word) String() string {
+	return fmt.Sprintf("0x%08x", uint32(w))
+}
+
+// addr is a word used as an address.
+type addr word
+
+// wordsAt is the *addrWithLen of a with length of n words.
+func (a addr) wordsAt(n uint) *addrWithLen {
+	return &addrWithLen{a: a, l: n * 4}
 }
 
 // parseAddr parses an addr from a hexadecimal string.
@@ -178,8 +187,8 @@ func patchLLGetter(pid int, dst *addrWithLen) error {
 	return nil
 }
 
-// patchLLvalue patches the log level value, pointed to in the last word of the getter.
-func patchLLvalue(pid int, getter *addrWithLen) error {
+// patchLLValue patches the log level value, pointed to in the last word of the getter.
+func patchLLValue(pid int, getter *addrWithLen) error {
 	data := make([]byte, getter.l)
 	n, err := syscall.PtracePeekData(pid, uintptr(getter.a), data)
 	if err != nil {
@@ -238,8 +247,8 @@ func getPIDSymAddr(pid int, elff, symbol string) (*addrWithLen, error) {
 	return ret, nil
 }
 
-// ptrace attaches to a tracee and returns a function that must be called before the program exits.
-func ptrace(pid int) (func(), error) {
+// ptraceAttach attaches to a tracee and returns a function that must be called before the program exits.
+func ptraceAttach(pid int) (func(), error) {
 	if err := syscall.PtraceAttach(pid); err != nil {
 		return nil, fmt.Errorf("can't ptrace(PTRACE_ATTACH, %d): %v", pid, err)
 	}
@@ -258,11 +267,181 @@ func ptrace(pid int) (func(), error) {
 	}, nil
 }
 
+// armRegs is the ARM EABI register set.
+type armRegs struct {
+	r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10 word
+	fp, ip, sp, lr, pc, cpsr, r0orig            word
+}
+
+// ptraceRegs returns a syscall.PtraceRegs from a.
+func (a *armRegs) ptraceRegs() syscall.PtraceRegs {
+	return syscall.PtraceRegs{
+		Uregs: [18]uint32{
+			uint32(a.r0), uint32(a.r1), uint32(a.r2), uint32(a.r3), uint32(a.r4), uint32(a.r5), uint32(a.r6),
+			uint32(a.r7), uint32(a.r8), uint32(a.r9), uint32(a.r10), uint32(a.fp), uint32(a.ip), uint32(a.sp),
+			uint32(a.lr), uint32(a.pc), uint32(a.cpsr), uint32(a.r0orig),
+		}}
+}
+
+// setSyscall sets a up for calling trap with args.
+func (a *armRegs) setSyscall(trap word, args ...word) error {
+	switch len(args) {
+	case 7:
+		a.r6 = args[6]
+		fallthrough
+	case 6:
+		a.r5 = args[5]
+		fallthrough
+	case 5:
+		a.r4 = args[4]
+		fallthrough
+	case 4:
+		a.r3 = args[3]
+		fallthrough
+	case 3:
+		a.r2 = args[2]
+		fallthrough
+	case 2:
+		a.r1 = args[1]
+		fallthrough
+	case 1:
+		a.r0 = args[0]
+		fallthrough
+	case 0:
+		a.r7 = trap
+		return nil
+	}
+	return errors.New("can't have more than 7 syscall args")
+}
+
+// fromPtraceRegs returns armRegs from syscall.PtraceRegs’ Uregs.
+func fromPtraceRegs(pr syscall.PtraceRegs) armRegs {
+	r := pr.Uregs
+	return armRegs{
+		word(r[0]), word(r[1]), word(r[2]), word(r[3]), word(r[4]), word(r[5]), word(r[6]),
+		word(r[7]), word(r[8]), word(r[9]), word(r[10]), word(r[11]), word(r[12]), word(r[13]),
+		word(r[14]), word(r[15]), word(r[16]), word(r[17])}
+}
+
+// peek reads src.l bytes from the tracee’s memory at offset src.a.
+func peek(pid int, src *addrWithLen) ([]byte, error) {
+	ret := make([]byte, src.l)
+
+	n, err := syscall.PtracePeekData(pid, uintptr(src.a), ret)
+	if err != nil {
+		return nil, fmt.Errorf("can't peek %v from tracee %d: %v", src, pid, err)
+	}
+
+	if n < 0 || uint(n) != src.l {
+		return nil, fmt.Errorf("only peeked %d bytes from tracee %d at %v, want %d", n, pid, src, src.l)
+	}
+
+	ret = ret[0:n]
+	return ret, nil
+}
+
+// poke writes data to the tracee’s memory at offset dst.
+func poke(pid int, dst addr, data []byte) error {
+	wantN := len(data)
+	n, err := syscall.PtracePokeData(pid, uintptr(dst), data)
+	if err != nil {
+		return fmt.Errorf("can't poke %#v to tracee %d at offset %v: %v", data, pid, dst, err)
+	}
+
+	if n != wantN {
+		return fmt.Errorf("only poked %d bytes to tracee %d at offset %v, want %v (%v)", n, pid, dst, wantN, data)
+	}
+
+	return nil
+}
+
+// injectSyscall injects a syscall into the tracee.
+func injectSyscall(pid int, trapno word, args ...word) (word, error) {
+	// Get registers, save 3 words at PC.
+	var pr syscall.PtraceRegs
+	if err := syscall.PtraceGetRegs(pid, &pr); err != nil {
+		return 0, fmt.Errorf("can't get tracee %d's registers: %v", pid, err)
+	}
+
+	regs := fromPtraceRegs(pr)
+	pc := addr(regs.pc)
+	ins, err := peek(pid, pc.wordsAt(3))
+	if err != nil {
+		return 0, fmt.Errorf("can't get current instruction: %v", err)
+	}
+
+	origRegs := regs
+	origIns := ins
+
+	// Set up registers for syscall args and our instructions at pc+4.
+	if err := regs.setSyscall(trapno, args...); err != nil {
+		return 0, err
+	}
+	regs.pc += 4
+	ins = []byte{
+		0x00, 0x00, 0x00, 0xef, // svc 0
+		0xe7, 0xf0, 0x01, 0xf0, // debugger trap
+	}
+
+	// Restore original memory/register contents before returning.
+	pokeInsn := func(insn []byte, regs armRegs) error {
+		r := regs.ptraceRegs()
+		if err := syscall.PtraceSetRegs(pid, &r); err != nil {
+			return fmt.Errorf("can't set registers for tracee %d to %#v (%#v): %v", pid, r, regs, err)
+		}
+
+		if err := poke(pid, addr(regs.pc), insn); err != nil {
+			return fmt.Errorf("can't poke instruction %#v to tracee %d at %v: %v", insn, pid, regs.pc, err)
+		}
+
+		return nil
+	}
+
+	defer func() {
+		if err := pokeInsn(origIns, origRegs); err != nil {
+			log.Printf("Warning: Unable to restore original instruction and/or registers: %v.")
+			log.Printf("Tracee may become unstable. reboot soon.")
+			return
+		}
+		log.Printf("Restored original program state.")
+	}()
+
+	// Actually patch memory, set register, continue execution (until the breakpoint after svc 0).
+	log.Printf("Patching current instruction %#v, registers %#v", origIns, origRegs)
+	if err := pokeInsn(ins, regs); err != nil {
+		return 0, fmt.Errorf("can't patch syscall instruction: %v", err)
+	}
+
+	log.Printf("Set insn %#v, regs %#v", ins, regs)
+
+	if err := syscall.PtraceCont(pid, 0); err != nil {
+		return 0, fmt.Errorf("can't single-step tracee %d: %v", pid, err)
+	}
+
+	var ws syscall.WaitStatus
+	if _, err := syscall.Wait4(pid, &ws, 0, nil); err != nil {
+		return 0, fmt.Errorf("can't wait for tracee %d: %v.", pid, err)
+	}
+	log.Printf("waitpid(%d) = %#v", pid, ws)
+
+	// Back from syscall, get return value.
+	var newRegs syscall.PtraceRegs
+	if err := syscall.PtraceGetRegs(pid, &newRegs); err != nil {
+		return 0, fmt.Errorf("can't get registers after single-stepping tracee %d: %v", pid, err)
+	}
+
+	log.Printf("regs after syscall: %#v (%#v)", newRegs, fromPtraceRegs(newRegs))
+
+	return fromPtraceRegs(newRegs).r0, nil
+
+	// Deferred function restores original memory/registers.
+}
+
 // main attaches to the tracee and performs the action specified by --action.
 func main() {
 	flag.Parse()
 
-	detach, err := ptrace(*flagPID)
+	detach, err := ptraceAttach(*flagPID)
 	if err != nil {
 		log.Fatalf("Can't ptrace --pid=%d: %v.", *flagPID, err)
 	}
@@ -276,9 +455,15 @@ func main() {
 	err = nil
 	switch *flagAction {
 	case "patch-ll-value":
-		err = patchLLvalue(*flagPID, llGetter)
+		err = patchLLValue(*flagPID, llGetter)
 	case "patch-ll-getter":
 		err = patchLLGetter(*flagPID, llGetter)
+	case "getpid":
+		var pidw word
+		pidw, err = injectSyscall(*flagPID, syscall.SYS_GETPID)
+		if err == nil {
+			log.Printf("getpid() = %d", pidw)
+		}
 	default:
 		err = fmt.Errorf("Unknown action %q", *flagAction)
 	}
