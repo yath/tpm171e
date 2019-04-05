@@ -75,6 +75,11 @@ func (w word) String() string {
 // addr is a word used as an address.
 type addr word
 
+// String implements fmt.Stringer.
+func (a addr) String() string {
+	return fmt.Sprintf("0x%08x", uint32(a))
+}
+
 // wordsAt is the *addrWithLen of a with length of n words.
 func (a addr) wordsAt(n uint) *addrWithLen {
 	return &addrWithLen{a: a, l: n * 4}
