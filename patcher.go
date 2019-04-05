@@ -28,15 +28,11 @@ var warning = log.New(os.Stderr, "WARNING: ", log.Ltime)
 var (
 	flagLLGetterELF    = flag.String("log_level_getter_elf", "/linux_rootfs/basic/libmtkapp.so", "ELF file the --log_level_getter_symbol is defined in.")
 	flagLLGetterSymbol = flag.String("log_level_getter_symbol", "a_cfg_custom_get_log_print_flag", "Symbol that returns the customer log level.")
+	flagDLLib          = flag.String("dl_lib", "/linux_rootfs/lib/libdl-2.18.so", "Path to libdl.so (as mapped by dtv_svc).")
+	flagSOFile         = flag.String("so_file", "/data/local/tmp/patcher-payload.so", "Path to the .so file to load for --action=inject-so.")
 	flagPID            = flag.Int("pid", 0, "PID of dtv_svc.")
-	flagAction         = flag.String("action", "patch-ll-value", "Action to perform. 'patch-ll-value' to override the log level with 0xff, 'patch-ll-getter' to override the --log_level_getter_symbol entirely, 'getpid' to inject a getpid() system call.")
+	flagAction         = flag.String("action", "patch-ll-value", "Action to perform. 'patch-ll-value' to override the log level with 0xff, 'getpid' to inject a getpid() system call, 'inject-so' to load --so_file into the process.")
 )
-
-// retFF is the native encoding of a subroutine that returns 0xff.
-var retFF = []byte{
-	0xff, 0x00, 0xa0, 0xe3, // mov r0, #255
-	0x1e, 0xff, 0x2f, 0xe1, // bx lr
-}
 
 // getELFSymAddr returns the *elf.Symbol of a symbol in an ELF file.
 func getELFSymAddr(filename, symbol string) (*elf.Symbol, error) {
@@ -59,6 +55,10 @@ func getELFSymAddr(filename, symbol string) (*elf.Symbol, error) {
 			sym := sym // copy
 			ret = &sym
 		}
+	}
+
+	if ret == nil {
+		return nil, fmt.Errorf("symbol %q not found in library %q", symbol, filename)
 	}
 
 	return ret, nil
@@ -163,22 +163,6 @@ func getExecutableMapping(pid int, libname string) (*addrWithLen, error) {
 	return nil, fmt.Errorf("no executable mapping of %q in %d", libname, pid)
 }
 
-// patchLLGetter patches the log level getter with the contents of retFF.
-func patchLLGetter(t *tracee, dst *addrWithLen) error {
-	old, err := t.peek(dst)
-	if err != nil {
-		return fmt.Errorf("can't read %d bytes from %v: %v", dst.l, t, err)
-	}
-
-	log.Printf("Read getter: %#v, overwriting with retFF = %d bytes", old, len(retFF))
-
-	if len(old) < len(retFF) {
-		return fmt.Errorf("len(old) = %d < len(retFF) = %d, would overwrite too much", len(old), len(retFF))
-	}
-
-	return t.poke(dst.a, retFF)
-}
-
 // patchLLValue patches the log level value, pointed to in the last word of the getter.
 func patchLLValue(t *tracee, getter *addrWithLen) error {
 	data, err := t.peek(getter)
@@ -209,13 +193,10 @@ func getPIDSymAddr(pid int, elff, symbol string) (*addrWithLen, error) {
 		return nil, fmt.Errorf("can't determine address of %q in ELF %q: %v", symbol, elff, err)
 	}
 
-	log.Printf("Found symbol in ELF: %#v", sym)
-
 	m, err := getExecutableMapping(pid, elff)
 	if err != nil {
 		return nil, fmt.Errorf("can't determine executable mapping of %q for PID %d: %v", elff, pid, err)
 	}
-	log.Printf("Found mapping in process: %v", m)
 
 	if sym.Value+sym.Size > uint64(m.l) {
 		return nil, fmt.Errorf("symbol %v's address (%v) + length (%d) = %d exceeds mapping size %d", symbol, sym.Value, sym.Size, sym.Value+sym.Size, m.l)
@@ -224,7 +205,6 @@ func getPIDSymAddr(pid int, elff, symbol string) (*addrWithLen, error) {
 	off := m.a + addr(sym.Value)
 
 	ret := &addrWithLen{a: off, l: uint(sym.Size)}
-	log.Printf("Offset: %v", ret)
 
 	return ret, nil
 }
@@ -257,7 +237,7 @@ func (t *tracee) attach() (func(), error) {
 	}, nil
 }
 
-// armRegs is the ARM EABI register set.
+// armRegs is the ARM EABI register set. Must be in ptrace uregs order.
 type armRegs struct {
 	r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10 word
 	fp, ip, sp, lr, pc, cpsr, r0orig            word
@@ -267,10 +247,32 @@ type armRegs struct {
 func (a *armRegs) ptraceRegs() *syscall.PtraceRegs {
 	return &syscall.PtraceRegs{
 		Uregs: [18]uint32{
-			uint32(a.r0), uint32(a.r1), uint32(a.r2), uint32(a.r3), uint32(a.r4), uint32(a.r5), uint32(a.r6),
-			uint32(a.r7), uint32(a.r8), uint32(a.r9), uint32(a.r10), uint32(a.fp), uint32(a.ip), uint32(a.sp),
-			uint32(a.lr), uint32(a.pc), uint32(a.cpsr), uint32(a.r0orig),
+			uint32(a.r0), uint32(a.r1), uint32(a.r2), uint32(a.r3), uint32(a.r4), uint32(a.r5),
+			uint32(a.r6), uint32(a.r7), uint32(a.r8), uint32(a.r9), uint32(a.r10), uint32(a.fp),
+			uint32(a.ip), uint32(a.sp), uint32(a.lr), uint32(a.pc), uint32(a.cpsr), uint32(a.r0orig),
 		}}
+}
+
+// setCallRegs set a up for calling a subroutine with arguments.
+func (a *armRegs) setCallRegs(args ...word) error {
+	switch len(args) {
+	case 4:
+		a.r3 = args[3]
+		fallthrough
+	case 3:
+		a.r2 = args[2]
+		fallthrough
+	case 2:
+		a.r1 = args[1]
+		fallthrough
+	case 1:
+		a.r0 = args[0]
+		fallthrough
+	case 0:
+		return nil
+	}
+
+	return errors.New("can't have more than 4 call args") // would need a stack.
 }
 
 // setSyscall sets a up for calling trap with args.
@@ -369,7 +371,7 @@ func (t *tracee) poke(dst addr, data []byte) error {
 // followed by a debugger trap (0xe7f001f0), executes it, restores the previous state and
 // returns the value of r0. If pc is nonzero, it will be executed instead and the injected code
 // will be pointed to by lr. rs, if non-nil, can make further adjustments to the register set.
-func (t *tracee) injectCode(code []byte, pc word, rs func(*armRegs)) (word, error) {
+func (t *tracee) injectCode(code []byte, pc addr, rs func(*armRegs)) (word, error) {
 	// Get tracee’s registers, code before overwriting.
 	origRegs, err := t.getRegs()
 	if err != nil {
@@ -388,7 +390,7 @@ func (t *tracee) injectCode(code []byte, pc word, rs func(*armRegs)) (word, erro
 	newRegs.pc += 4
 	if pc != 0 {
 		newRegs.lr = newRegs.pc
-		newRegs.pc = pc
+		newRegs.pc = word(pc)
 	}
 	if rs != nil {
 		rs(&newRegs)
@@ -413,17 +415,12 @@ func (t *tracee) injectCode(code []byte, pc word, rs func(*armRegs)) (word, erro
 			log.Printf("Tracee may become unstable. reboot soon.")
 			return
 		}
-		log.Printf("Restored original program state.")
 	}()
-
-	log.Printf("Patching current code %#v, registers %#v", origCode, origRegs)
 
 	// Actually patch memory, set register, continue execution until breakpoint.
 	if err := setCodeAndRegs(newCode, &newRegs); err != nil {
 		return 0, fmt.Errorf("can't patch code %#v and registers %#v: %v", newCode, newRegs, err)
 	}
-
-	log.Printf("Set code %#v, regs %#v", newCode, newRegs)
 
 	if err := syscall.PtraceCont(t.pid, 0); err != nil {
 		return 0, fmt.Errorf("can't single-step %v: %v", t, err)
@@ -434,7 +431,6 @@ func (t *tracee) injectCode(code []byte, pc word, rs func(*armRegs)) (word, erro
 	if _, err := syscall.Wait4(t.pid, &ws, 0, nil); err != nil {
 		return 0, fmt.Errorf("can't wait for %v: %v", t, err)
 	}
-	log.Printf("waitpid(%d) = %#v", t.pid, ws)
 
 	currRegs, err := t.getRegs()
 	if err != nil {
@@ -450,7 +446,9 @@ func (t *tracee) injectSyscall(trapno word, args ...word) (word, error) {
 		0x00, 0x00, 0x00, 0xef, // svc 0
 	}
 	regSetter := func(r *armRegs) {
-		r.setSyscall(trapno, args...)
+		if err := r.setSyscall(trapno, args...); err != nil {
+			log.Fatalf("Can't set syscall registers: %v", err) // unlikely
+		}
 	}
 	ret, err := t.injectCode(code, 0, regSetter)
 	if err != nil {
@@ -461,6 +459,21 @@ func (t *tracee) injectSyscall(trapno word, args ...word) (word, error) {
 		log.Printf("injectSyscall(%v, %#v) failed with errno %d=%v", trapno, args, e, e)
 		return 0, e
 	}
+	return ret, nil
+}
+
+// injectCall injects a procedure call into the tracee.
+func (t *tracee) injectCall(proc addr, args ...word) (word, error) {
+	regSetter := func(r *armRegs) {
+		if err := r.setCallRegs(args...); err != nil {
+			log.Fatalf("Can't set registers for calling proc %v: %v", proc, err) // unlikely
+		}
+	}
+	ret, err := t.injectCode(nil, proc, regSetter)
+	if err != nil {
+		return 0, fmt.Errorf("can't inject call to %v with args=%v: %v", proc, args, err)
+	}
+
 	return ret, nil
 }
 
@@ -495,6 +508,47 @@ func (t *tracee) free(a *addrWithLen) error {
 	return nil
 }
 
+// warnOnError prints a warning if f returns a non-nil error.
+func warnOnError(f func() error, ft string, args ...interface{}) {
+	if err := f(); err != nil {
+		log.Printf("WARNING: %s: %v", fmt.Sprintf(ft, args...), err)
+	}
+}
+
+// dlopen calls dlopen (defined in *flagDLLib) with the given filename in the tracee.
+func (t *tracee) dlopen(filename string) (word, error) {
+	dlopen, err := getPIDSymAddr(t.pid, *flagDLLib, "dlopen")
+	if err != nil {
+		return 0, fmt.Errorf("can't find dlopen in %v: %v", t, err)
+	}
+
+	cfilename, err := t.allocString(filename)
+	if err != nil {
+		return 0, fmt.Errorf("can't allocate string for dlopen(%q) in %v: %v", filename, t, err)
+	}
+	defer warnOnError(func() error { return t.free(cfilename) }, "can't free string from dlopen(%q) in %v", filename, t)
+
+	return t.injectCall(dlopen.a, word(cfilename.a), 2 /* RTLD_NOW */)
+}
+
+// dlclose calls dlclose (defined in *flagDLLib) for the given handle in the tracee.
+func (t *tracee) dlclose(handle word) error {
+	dlclose, err := getPIDSymAddr(t.pid, *flagDLLib, "dlclose")
+	if err != nil {
+		return fmt.Errorf("can't find dlclose in %v: %v", t, err)
+	}
+
+	ret, err := t.injectCall(dlclose.a, handle)
+	if err != nil {
+		return fmt.Errorf("can't inject call to dlclose: %v", err)
+	}
+	if ret != 0 {
+		return fmt.Errorf("dlclose(%v) = %v, expected 0", handle, ret)
+	}
+
+	return nil
+}
+
 // main attaches to the tracee and performs the action specified by --action.
 func main() {
 	flag.Parse()
@@ -507,29 +561,34 @@ func main() {
 	}
 	defer detach()
 
-	llGetter, err := getPIDSymAddr(*flagPID, *flagLLGetterELF, *flagLLGetterSymbol)
-	if err != nil {
-		log.Fatalf("Can't determine load address of %q in %q of PID %d: %v.", *flagLLGetterSymbol, *flagLLGetterELF, *flagPID, err)
-	}
-
-	err = nil
 	switch *flagAction {
 	case "patch-ll-value":
-		err = patchLLValue(t, llGetter)
-	case "patch-ll-getter":
-		err = patchLLGetter(t, llGetter)
-	case "getpid":
-		var pidw word
-		pidw, err = t.injectSyscall(syscall.SYS_GETPID)
-		if err == nil {
-			log.Printf("getpid() = %d", pidw)
+		getter, err := getPIDSymAddr(*flagPID, *flagLLGetterELF, *flagLLGetterSymbol)
+		if err != nil {
+			log.Fatalf("Can't determine load address of %q in %q of PID %d: %v.", *flagLLGetterSymbol, *flagLLGetterELF, *flagPID, err)
 		}
-	default:
-		err = fmt.Errorf("Unknown action %q", *flagAction)
-	}
+		if err := patchLLValue(t, getter); err != nil {
+			log.Fatalf("Can't patch log level value at %v: %v", getter, err)
+		}
 
-	if err != nil {
-		log.Fatal(err)
+	case "getpid":
+		pidw, err := t.injectSyscall(syscall.SYS_GETPID)
+		if err != nil {
+			log.Fatalf("Can't inject getpid(): %v", err)
+		}
+
+		log.Printf("getpid() = %d", pidw)
+
+	case "inject-so":
+		hdl, err := t.dlopen(*flagSOFile)
+		if err != nil {
+			log.Fatalf("can't dlopen(%q): %v", *flagSOFile, err)
+		}
+		defer warnOnError(func() error { return t.dlclose(hdl) }, "can't dlclose(%v) (%q)", hdl, *flagSOFile)
+		log.Printf("dlopen(%q) = %v", *flagSOFile, hdl)
+
+	default:
+		log.Fatalf("Unknown action %q.", *flagAction)
 	}
 
 	log.Printf("Everything is fine.")

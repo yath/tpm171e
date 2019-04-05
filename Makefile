@@ -35,6 +35,9 @@ loader: loader.go assets.go
 cli: cli.go
 	GOARCH=arm $(GO) build -o $@ $<
 
+patcher-payload.so: patcher-payload.c
+	$(CROSS)$(CC) -fPIC -shared -nostdlib -o $@ $<
+
 patcher: patcher.go
 	GOARCH=arm $(GO) build -o $@ $<
 
@@ -99,4 +102,4 @@ run-cli: cli
 
 .PHONY: clean
 clean:
-	rm -f getroot.elf dtv_driver.lds threaddump.lds kernel.lds assets.go keyfile.txt passfile.txt $(ALL_BINARY_TARGETS)
+	rm -f getroot.elf patcher-payload.so dtv_driver.lds threaddump.lds kernel.lds assets.go keyfile.txt passfile.txt $(ALL_BINARY_TARGETS)
