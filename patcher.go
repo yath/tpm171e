@@ -236,12 +236,12 @@ func getPIDSymAddr(pid int, elff, symbol string) (*addrWithLen, error) {
 
 	m, err := getExecutableMapping(pid, elff)
 	if err != nil {
-		return nil, fmt.Errorf("can't determine executable mapping of %q for PID %d: %v. Exiting.", elff, pid, err)
+		return nil, fmt.Errorf("can't determine executable mapping of %q for PID %d: %v", elff, pid, err)
 	}
 	log.Printf("Found mapping in process: %v", m)
 
 	if sym.Value+sym.Size > uint64(m.l) {
-		return nil, fmt.Errorf("symbol %v's address (%v) + length (%d) = %d exceeds mapping size %d. Exiting.", sym.Value, sym.Size, sym.Value+sym.Size, m.l)
+		return nil, fmt.Errorf("symbol %v's address (%v) + length (%d) = %d exceeds mapping size %d", sym.Value, sym.Size, sym.Value+sym.Size, m.l)
 	}
 
 	off := m.a + addr(sym.Value)
@@ -260,7 +260,7 @@ func ptraceAttach(pid int) (func(), error) {
 
 	var ws syscall.WaitStatus
 	if _, err := syscall.Wait4(pid, &ws, 0, nil); err != nil {
-		return nil, fmt.Errorf("can't wait for tracee with PID %d: %v.", pid, err)
+		return nil, fmt.Errorf("can't wait for tracee with PID %d: %v", pid, err)
 	}
 	log.Printf("waitpid(%d) = %#v", pid, ws)
 
@@ -425,7 +425,7 @@ func injectSyscall(pid int, trapno word, args ...word) (word, error) {
 
 	var ws syscall.WaitStatus
 	if _, err := syscall.Wait4(pid, &ws, 0, nil); err != nil {
-		return 0, fmt.Errorf("can't wait for tracee %d: %v.", pid, err)
+		return 0, fmt.Errorf("can't wait for tracee %d: %v", pid, err)
 	}
 	log.Printf("waitpid(%d) = %#v", pid, ws)
 
