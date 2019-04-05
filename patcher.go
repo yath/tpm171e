@@ -429,6 +429,7 @@ func (t *tracee) injectCode(code []byte, pc word, rs func(*armRegs)) (word, erro
 		return 0, fmt.Errorf("can't single-step %v: %v", t, err)
 	}
 
+	// Wait for debugger trap, return r0.
 	var ws syscall.WaitStatus
 	if _, err := syscall.Wait4(t.pid, &ws, 0, nil); err != nil {
 		return 0, fmt.Errorf("can't wait for %v: %v", t, err)
@@ -451,7 +452,47 @@ func (t *tracee) injectSyscall(trapno word, args ...word) (word, error) {
 	regSetter := func(r *armRegs) {
 		r.setSyscall(trapno, args...)
 	}
-	return t.injectCode(code, 0, regSetter)
+	ret, err := t.injectCode(code, 0, regSetter)
+	if err != nil {
+		return 0, fmt.Errorf("can't inject syscall %v with args=%v: %v", trapno, args, err)
+	}
+	if ret > 0xfffff000 {
+		e := syscall.Errno(int32(ret) * -1)
+		log.Printf("injectSyscall(%v, %#v) failed with errno %d=%v", trapno, args, e, e)
+		return 0, e
+	}
+	return ret, nil
+}
+
+// allocString allocates a NUL-terminated string in the tracee’s address space.
+func (t *tracee) allocString(s string) (*addrWithLen, error) {
+	cstr, err := syscall.ByteSliceFromString(s)
+	if err != nil {
+		return nil, fmt.Errorf("can't make a byte slice from string %q: %v", s, err)
+	}
+
+	prot := word(syscall.PROT_READ | syscall.PROT_WRITE | syscall.PROT_EXEC)
+	flags := word(syscall.MAP_PRIVATE | syscall.MAP_ANONYMOUS)
+	m, err := t.injectSyscall(syscall.SYS_MMAP2, 0, word(len(cstr)), prot, flags, ^word(0), 0)
+	if err != nil {
+		return nil, fmt.Errorf("mmap()ing %d anonymous bytes failed: %v", len(cstr), err)
+	}
+
+	a := addr(m)
+	if err := t.poke(a, cstr); err != nil {
+		return nil, fmt.Errorf("can't copy C string %#v to tracee memory %v: %v", cstr, a, err)
+	}
+
+	return &addrWithLen{a, uint(len(cstr))}, nil
+}
+
+// free frees (munmap) a memory block in the tracee.
+func (t *tracee) free(a *addrWithLen) error {
+	ret, err := t.injectSyscall(syscall.SYS_MUNMAP, word(a.a), word(a.l))
+	if ret != 0 || err != nil {
+		return fmt.Errorf("can't munmap(%v): %v (ret=%v)", a, err, ret)
+	}
+	return nil
 }
 
 // main attaches to the tracee and performs the action specified by --action.
