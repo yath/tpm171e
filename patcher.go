@@ -80,11 +80,6 @@ func (a addr) String() string {
 	return fmt.Sprintf("0x%08x", uint32(a))
 }
 
-// wordsAt is the *addrWithLen of a with length of n words.
-func (a addr) wordsAt(n uint) *addrWithLen {
-	return &addrWithLen{a: a, l: n * 4}
-}
-
 // parseAddr parses an addr from a hexadecimal string.
 func parseAddr(s string) (addr, error) {
 	ret, err := strconv.ParseUint(s, 16, 32)
@@ -169,60 +164,42 @@ func getExecutableMapping(pid int, libname string) (*addrWithLen, error) {
 }
 
 // patchLLGetter patches the log level getter with the contents of retFF.
-func patchLLGetter(pid int, dst *addrWithLen) error {
-	data := make([]byte, dst.l)
-	n, err := syscall.PtracePeekData(pid, uintptr(dst.a), data)
+func patchLLGetter(t *tracee, dst *addrWithLen) error {
+	old, err := t.peek(dst)
 	if err != nil {
-		return fmt.Errorf("can't read %d bytes from tracee PID %d: %v", dst.l, pid, err)
+		return fmt.Errorf("can't read %d bytes from %v: %v", dst.l, t, err)
 	}
 
-	data = data[0:n]
-	log.Printf("Read getter: %#v, overwriting with retFF = %d bytes", data, len(retFF))
+	log.Printf("Read getter: %#v, overwriting with retFF = %d bytes", old, len(retFF))
 
-	if len(data) < len(retFF) {
-		return fmt.Errorf("len(data) = %d < len(retFF) = %d, would overwrite too much", len(data), len(retFF))
+	if len(old) < len(retFF) {
+		return fmt.Errorf("len(old) = %d < len(retFF) = %d, would overwrite too much", len(old), len(retFF))
 	}
 
-	n, err = syscall.PtracePokeData(pid, uintptr(dst.a), retFF)
-	if err != nil {
-		return fmt.Errorf("can't poke %#v to tracee PID %d at %v: %v", retFF, pid, dst, err)
-	}
-
-	log.Printf("Wrote %d bytes (%#v), want %d", n, retFF, len(retFF))
-	return nil
+	return t.poke(dst.a, retFF)
 }
 
 // patchLLValue patches the log level value, pointed to in the last word of the getter.
-func patchLLValue(pid int, getter *addrWithLen) error {
-	data := make([]byte, getter.l)
-	n, err := syscall.PtracePeekData(pid, uintptr(getter.a), data)
+func patchLLValue(t *tracee, getter *addrWithLen) error {
+	data, err := t.peek(getter)
 	if err != nil {
-		return fmt.Errorf("can't read %d bytes from tracee PID %d: %v", getter.l, pid, err)
+		return fmt.Errorf("can't read %d bytes from %v: %v", getter.l, t, err)
 	}
-
-	data = data[0:n]
 	log.Printf("Read getter: %#v", data)
 
 	s := data[len(data)-4:]
 	ptr := addr(s[3])<<24 | addr(s[2])<<16 | addr(s[1])<<8 | addr(s[0])
 	log.Printf("Pointer to log level: %v", ptr)
 
-	data = make([]byte, 1)
-	n, err = syscall.PtracePeekData(pid, uintptr(ptr), data)
+	data, err = t.peek(&addrWithLen{ptr, 1})
 	if err != nil {
-		return fmt.Errorf("Can't read %d bytes from tracee PID %d: %v", len(data), pid, err)
+		return fmt.Errorf("can't read 1 byte from %v: %v", t, err)
 	}
 
 	log.Printf("Log level now: 0x%02x; setting to 0xff.", data[0])
 
 	data[0] = 0xff
-	n, err = syscall.PtracePokeData(pid, uintptr(ptr), data)
-	if err != nil {
-		return fmt.Errorf("can't poke %#v to tracee PID %d at %v: %v", data, pid, ptr, err)
-	}
-
-	log.Printf("Wrote %d bytes (%#v), want %d", n, data, len(data))
-	return nil
+	return t.poke(ptr, data)
 }
 
 // getPIDSymAddr returns the offset and length of a file-mapped symbol in a running process.
@@ -252,22 +229,30 @@ func getPIDSymAddr(pid int, elff, symbol string) (*addrWithLen, error) {
 	return ret, nil
 }
 
+type tracee struct {
+	pid int
+}
+
+func (t *tracee) String() {
+	fmt.Sprintf("%T{pid=%d}", t, t.pid)
+}
+
 // ptraceAttach attaches to a tracee and returns a function that must be called before the program exits.
-func ptraceAttach(pid int) (func(), error) {
-	if err := syscall.PtraceAttach(pid); err != nil {
-		return nil, fmt.Errorf("can't ptrace(PTRACE_ATTACH, %d): %v", pid, err)
+func (t *tracee) attach() (func(), error) {
+	if err := syscall.PtraceAttach(t.pid); err != nil {
+		return nil, fmt.Errorf("can't ptrace(PTRACE_ATTACH, %v): %v", t, err)
 	}
 
 	var ws syscall.WaitStatus
-	if _, err := syscall.Wait4(pid, &ws, 0, nil); err != nil {
-		return nil, fmt.Errorf("can't wait for tracee with PID %d: %v", pid, err)
+	if _, err := syscall.Wait4(t.pid, &ws, 0, nil); err != nil {
+		return nil, fmt.Errorf("can't wait for tracee with PID %d: %v", t.pid, err)
 	}
-	log.Printf("waitpid(%d) = %#v", pid, ws)
+	log.Printf("waitpid(%d) = %#v", t.pid, ws)
 
 	return func() {
 		log.Printf("Note: If the UI gets stuck, run pkill -CONT dtv_svc")
-		if err := syscall.PtraceDetach(pid); err != nil {
-			warning.Printf("Can't detach from tracee PID %d: %v", pid, err)
+		if err := syscall.PtraceDetach(t.pid); err != nil {
+			warning.Printf("Can't detach from %v: %v", t, err)
 		}
 	}, nil
 }
@@ -278,9 +263,9 @@ type armRegs struct {
 	fp, ip, sp, lr, pc, cpsr, r0orig            word
 }
 
-// ptraceRegs returns a syscall.PtraceRegs from a.
-func (a *armRegs) ptraceRegs() syscall.PtraceRegs {
-	return syscall.PtraceRegs{
+// ptraceRegs returns syscall.PtraceRegs from a.
+func (a *armRegs) ptraceRegs() *syscall.PtraceRegs {
+	return &syscall.PtraceRegs{
 		Uregs: [18]uint32{
 			uint32(a.r0), uint32(a.r1), uint32(a.r2), uint32(a.r3), uint32(a.r4), uint32(a.r5), uint32(a.r6),
 			uint32(a.r7), uint32(a.r8), uint32(a.r9), uint32(a.r10), uint32(a.fp), uint32(a.ip), uint32(a.sp),
@@ -328,17 +313,37 @@ func fromPtraceRegs(pr syscall.PtraceRegs) armRegs {
 		word(r[14]), word(r[15]), word(r[16]), word(r[17])}
 }
 
+// getRegs returns the tracee’s current register set.
+func (t *tracee) getRegs() (*armRegs, error) {
+	var pr syscall.PtraceRegs
+	if err := syscall.PtraceGetRegs(t.pid, &pr); err != nil {
+		return nil, fmt.Errorf("can't get %v's registers: %v", t, err)
+	}
+
+	regs := fromPtraceRegs(pr)
+	return &regs, nil
+}
+
+// setRegs sets the tracee’s register set.
+func (t *tracee) setRegs(regs *armRegs) error {
+	r := regs.ptraceRegs()
+	if err := syscall.PtraceSetRegs(t.pid, r); err != nil {
+		return fmt.Errorf("can't set registers for %v to %#v (%#v): %v", t, r, regs, err)
+	}
+	return nil
+}
+
 // peek reads src.l bytes from the tracee’s memory at offset src.a.
-func peek(pid int, src *addrWithLen) ([]byte, error) {
+func (t *tracee) peek(src *addrWithLen) ([]byte, error) {
 	ret := make([]byte, src.l)
 
-	n, err := syscall.PtracePeekData(pid, uintptr(src.a), ret)
+	n, err := syscall.PtracePeekData(t.pid, uintptr(src.a), ret)
 	if err != nil {
-		return nil, fmt.Errorf("can't peek %v from tracee %d: %v", src, pid, err)
+		return nil, fmt.Errorf("can't peek %v from %v: %v", src, t, err)
 	}
 
 	if n < 0 || uint(n) != src.l {
-		return nil, fmt.Errorf("only peeked %d bytes from tracee %d at %v, want %d", n, pid, src, src.l)
+		return nil, fmt.Errorf("only peeked %d bytes from %v at %v, want %d", n, t, src, src.l)
 	}
 
 	ret = ret[0:n]
@@ -346,64 +351,64 @@ func peek(pid int, src *addrWithLen) ([]byte, error) {
 }
 
 // poke writes data to the tracee’s memory at offset dst.
-func poke(pid int, dst addr, data []byte) error {
+func (t *tracee) poke(dst addr, data []byte) error {
 	wantN := len(data)
-	n, err := syscall.PtracePokeData(pid, uintptr(dst), data)
+	n, err := syscall.PtracePokeData(t.pid, uintptr(dst), data)
 	if err != nil {
-		return fmt.Errorf("can't poke %#v to tracee %d at offset %v: %v", data, pid, dst, err)
+		return fmt.Errorf("can't poke %#v to %v at offset %v: %v", data, t, dst, err)
 	}
 
 	if n != wantN {
-		return fmt.Errorf("only poked %d bytes to tracee %d at offset %v, want %v (%v)", n, pid, dst, wantN, data)
+		return fmt.Errorf("only poked %d bytes to %v at offset %v, want %v (%v)", n, t, dst, wantN, data)
 	}
 
 	return nil
 }
 
-// injectSyscall injects a syscall into the tracee.
-func injectSyscall(pid int, trapno word, args ...word) (word, error) {
-	// Get registers, save 3 words at PC.
-	var pr syscall.PtraceRegs
-	if err := syscall.PtraceGetRegs(pid, &pr); err != nil {
-		return 0, fmt.Errorf("can't get tracee %d's registers: %v", pid, err)
-	}
-
-	regs := fromPtraceRegs(pr)
-	pc := addr(regs.pc)
-	ins, err := peek(pid, pc.wordsAt(3))
+// injectCode writes the code into the tracee at the current program counter + 4 (next word),
+// followed by a debugger trap (0xe7f001f0), executes it, restores the previous state and
+// returns the value of r0. If pc is nonzero, it will be executed instead and the injected code
+// will be pointed to by lr. rs, if non-nil, can make further adjustments to the register set.
+func (t *tracee) injectCode(code []byte, pc word, rs func(*armRegs)) (word, error) {
+	// Get tracee’s registers, code before overwriting.
+	origRegs, err := t.getRegs()
 	if err != nil {
-		return 0, fmt.Errorf("can't get current instruction: %v", err)
+		return 0, fmt.Errorf("can't get tracee's registers before injecting code: %v", err)
+	}
+	newCode := append(code, []byte{0xe7, 0xf0, 0x01, 0xf0}...) // trap
+	loc := &addrWithLen{a: addr(origRegs.pc) + 4, l: uint(len(newCode))}
+
+	origCode, err := t.peek(loc)
+	if err != nil {
+		return 0, fmt.Errorf("can't get tracee's code at %v before injecting ours: %v", loc, err)
 	}
 
-	origRegs := regs
-	origIns := ins
-
-	// Set up registers for syscall args and our instructions at pc+4.
-	if err := regs.setSyscall(trapno, args...); err != nil {
-		return 0, err
+	// Build new register set.
+	newRegs := *origRegs
+	newRegs.pc += 4
+	if pc != 0 {
+		newRegs.lr = newRegs.pc
+		newRegs.pc = pc
 	}
-	regs.pc += 4
-	ins = []byte{
-		0x00, 0x00, 0x00, 0xef, // svc 0
-		0xe7, 0xf0, 0x01, 0xf0, // debugger trap
+	if rs != nil {
+		rs(&newRegs)
 	}
 
-	// Restore original memory/register contents before returning.
-	pokeInsn := func(insn []byte, regs armRegs) error {
-		r := regs.ptraceRegs()
-		if err := syscall.PtraceSetRegs(pid, &r); err != nil {
-			return fmt.Errorf("can't set registers for tracee %d to %#v (%#v): %v", pid, r, regs, err)
+	// Set registers and code at “loc”.
+	setCodeAndRegs := func(code []byte, regs *armRegs) error {
+		if err := t.setRegs(regs); err != nil {
+			return fmt.Errorf("can't set registers for %v to %v:", t, regs, err)
 		}
 
-		if err := poke(pid, addr(regs.pc), insn); err != nil {
-			return fmt.Errorf("can't poke instruction %#v to tracee %d at %v: %v", insn, pid, regs.pc, err)
+		if err := t.poke(loc.a, code); err != nil {
+			return fmt.Errorf("can't poke code %#v to %v at %v: %v", code, t, loc.a, err)
 		}
 
 		return nil
 	}
 
 	defer func() {
-		if err := pokeInsn(origIns, origRegs); err != nil {
+		if err := setCodeAndRegs(origCode, origRegs); err != nil {
 			log.Printf("Warning: Unable to restore original instruction and/or registers: %v.")
 			log.Printf("Tracee may become unstable. reboot soon.")
 			return
@@ -411,44 +416,53 @@ func injectSyscall(pid int, trapno word, args ...word) (word, error) {
 		log.Printf("Restored original program state.")
 	}()
 
-	// Actually patch memory, set register, continue execution (until the breakpoint after svc 0).
-	log.Printf("Patching current instruction %#v, registers %#v", origIns, origRegs)
-	if err := pokeInsn(ins, regs); err != nil {
-		return 0, fmt.Errorf("can't patch syscall instruction: %v", err)
+	log.Printf("Patching current code %#v, registers %#v", origCode, origRegs)
+
+	// Actually patch memory, set register, continue execution until breakpoint.
+	if err := setCodeAndRegs(newCode, &newRegs); err != nil {
+		return 0, fmt.Errorf("can't patch code %#v and registers %#v: %v", newCode, newRegs, err)
 	}
 
-	log.Printf("Set insn %#v, regs %#v", ins, regs)
+	log.Printf("Set code %#v, regs %#v", newCode, newRegs)
 
-	if err := syscall.PtraceCont(pid, 0); err != nil {
-		return 0, fmt.Errorf("can't single-step tracee %d: %v", pid, err)
+	if err := syscall.PtraceCont(t.pid, 0); err != nil {
+		return 0, fmt.Errorf("can't single-step %v: %v", t, err)
 	}
 
 	var ws syscall.WaitStatus
-	if _, err := syscall.Wait4(pid, &ws, 0, nil); err != nil {
-		return 0, fmt.Errorf("can't wait for tracee %d: %v", pid, err)
+	if _, err := syscall.Wait4(t.pid, &ws, 0, nil); err != nil {
+		return 0, fmt.Errorf("can't wait for %v: %v", t, err)
 	}
-	log.Printf("waitpid(%d) = %#v", pid, ws)
+	log.Printf("waitpid(%d) = %#v", t.pid, ws)
 
-	// Back from syscall, get return value.
-	var newRegs syscall.PtraceRegs
-	if err := syscall.PtraceGetRegs(pid, &newRegs); err != nil {
-		return 0, fmt.Errorf("can't get registers after single-stepping tracee %d: %v", pid, err)
+	currRegs, err := t.getRegs()
+	if err != nil {
+		return 0, fmt.Errorf("can't get registers after stepping %v: %v", t, err)
 	}
 
-	log.Printf("regs after syscall: %#v (%#v)", newRegs, fromPtraceRegs(newRegs))
+	return currRegs.r0, nil
+}
 
-	return fromPtraceRegs(newRegs).r0, nil
-
-	// Deferred function restores original memory/registers.
+// injectSyscall injects a syscall into the tracee.
+func (t *tracee) injectSyscall(trapno word, args ...word) (word, error) {
+	code := []byte{
+		0x00, 0x00, 0x00, 0xef, // svc 0
+	}
+	regSetter := func(r *armRegs) {
+		r.setSyscall(trapno, args...)
+	}
+	return t.injectCode(code, 0, regSetter)
 }
 
 // main attaches to the tracee and performs the action specified by --action.
 func main() {
 	flag.Parse()
 
-	detach, err := ptraceAttach(*flagPID)
+	t := &tracee{pid: *flagPID}
+
+	detach, err := t.attach()
 	if err != nil {
-		log.Fatalf("Can't ptrace --pid=%d: %v.", *flagPID, err)
+		log.Fatalf("Can't ptrace %v: %v.", t, err)
 	}
 	defer detach()
 
@@ -460,12 +474,12 @@ func main() {
 	err = nil
 	switch *flagAction {
 	case "patch-ll-value":
-		err = patchLLValue(*flagPID, llGetter)
+		err = patchLLValue(t, llGetter)
 	case "patch-ll-getter":
-		err = patchLLGetter(*flagPID, llGetter)
+		err = patchLLGetter(t, llGetter)
 	case "getpid":
 		var pidw word
-		pidw, err = injectSyscall(*flagPID, syscall.SYS_GETPID)
+		pidw, err = t.injectSyscall(syscall.SYS_GETPID)
 		if err == nil {
 			log.Printf("getpid() = %d", pidw)
 		}
