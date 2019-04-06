@@ -11,6 +11,7 @@ package main
 import (
 	"bytes"
 	"debug/elf"
+	"encoding/binary"
 	"errors"
 	"flag"
 	"fmt"
@@ -31,8 +32,12 @@ var (
 	flagDLLib          = flag.String("dl_lib", "/linux_rootfs/lib/libdl-2.18.so", "Path to libdl.so (as mapped by dtv_svc).")
 	flagSOFile         = flag.String("so_file", "/data/local/tmp/patcher-payload.so", "Path to the .so file to load for --action=inject-so.")
 	flagPID            = flag.Int("pid", 0, "PID of dtv_svc.")
-	flagAction         = flag.String("action", "patch-ll-value", "Action to perform. 'patch-ll-value' to override the log level with 0xff, 'getpid' to inject a getpid() system call, 'inject-so' to load --so_file into the process.")
+	flagAction         = flag.String("action", "patch-ll-value", "Action to perform. 'patch-ll-value' to override the log level with 0xff, 'getpid' to inject a getpid() system call, 'load-so' to load --so_file into the process, 'unload-so' to unload it.")
 )
+
+// unloadHandleSymbol is the name of a symbol within *flagSOFile that must be 4 bytes large
+// and is used to store the handle returned by dlopen.
+const unloadHandleSymbol = "unload_handle"
 
 // getELFSymAddr returns the *elf.Symbol of a symbol in an ELF file.
 func getELFSymAddr(filename, symbol string) (*elf.Symbol, error) {
@@ -97,41 +102,37 @@ func (al *addrWithLen) String() string {
 	return fmt.Sprintf("&addrWithLen{addr: %v, len: %d}", al.a, al.l)
 }
 
-// getExecutableMapping returns the load address and length of the executable with the name
-// “libname” mapped into pid’s address space at offset 0.
-func getExecutableMapping(pid int, libname string) (*addrWithLen, error) {
-	var err error
-
-	b, err := ioutil.ReadFile(fmt.Sprintf("/proc/%d/maps", pid))
+// findMapping returns the load address and length of the mapping containing offset within libname
+// in the tracee.
+func (t *tracee) findMapping(offset addr, filename string) (*addrWithLen, error) {
+	b, err := ioutil.ReadFile(fmt.Sprintf("/proc/%d/maps", t.pid))
 	if err != nil {
-		return nil, fmt.Errorf("can't read %d's page mappings: %v", pid, err)
+		return nil, fmt.Errorf("can't read %v's page mappings: %v", t, err)
 	}
 
 	bb := bytes.NewBuffer(b)
-	for err == nil {
+	var readerr error
+	for readerr == nil {
 		var line string
-		line, err = bb.ReadString('\n')
+		line, readerr = bb.ReadString('\n')
 		if line == "" {
 			continue
 		}
 
 		f := strings.Fields(line)
-		if l := len(f); l != 6 {
+		if l := len(f); l < 6 {
 			continue
 		}
 
-		//         0          1       2      3    4         5
-		// abe15000-ac7a0000 r-xp 00000000 fd:01 115 /linux_rootfs/basic/libmtkapp.so
+		//         0          1       2      3    4         5						     6
+		// abe15000-ac7a0000 r-xp 00000000 fd:01 115 /linux_rootfs/basic/libmtkapp.so [(deleted)]
 
-		if f[5] != libname {
+		if f[5] != filename {
 			continue
 		}
 
-		if !strings.Contains(f[1], "x") {
-			continue
-		}
-
-		if off, cerr := strconv.ParseUint(f[2], 16, 64); cerr != nil || off != 0 {
+		off, err := parseAddr(f[2])
+		if err != nil {
 			continue
 		}
 
@@ -140,27 +141,32 @@ func getExecutableMapping(pid int, libname string) (*addrWithLen, error) {
 			continue
 		}
 
-		var start, end addr
-		start, err = parseAddr(f[0])
+		start, err := parseAddr(f[0])
 		if err != nil {
-			err = fmt.Errorf("can't parse start address of line %q: %v", line, err)
-			break
+			return nil, fmt.Errorf("can't parse start address of line %q: %v", line, err)
 		}
 
-		end, err = parseAddr(f[1])
+		end, err := parseAddr(f[1])
 		if err != nil {
-			err = fmt.Errorf("can't parse end address of line %q: %v", line, err)
-			break
+			return nil, fmt.Errorf("can't parse end address of line %q: %v", line, err)
 		}
 
-		return &addrWithLen{a: start, l: uint(end - start)}, nil
+		l := uint(end - start)
+		offstart, offend := off, off+addr(l)
+		if offset < offstart || offset > offend {
+			continue
+		}
+
+		// XXX: Return the page from start-offset onwards, so the symbol offset can be
+		// added.
+		return &addrWithLen{a: start - off, l: l + uint(off)}, nil
 	}
 
-	if err != nil && err != io.EOF {
-		return nil, fmt.Errorf("error reading %d's mappings: %v", pid, err)
+	if readerr != nil && readerr != io.EOF {
+		return nil, fmt.Errorf("error reading %v's mappings: %v", t, err)
 	}
 
-	return nil, fmt.Errorf("no executable mapping of %q in %d", libname, pid)
+	return nil, fmt.Errorf("no mapping of %v+%v in %v (is it in .bss?)", filename, offset, t)
 }
 
 // patchLLValue patches the log level value, pointed to in the last word of the getter.
@@ -188,14 +194,21 @@ func patchLLValue(t *tracee, getter *addrWithLen) error {
 
 // getPIDSymAddr returns the offset and length of a file-mapped symbol in a running process.
 func getPIDSymAddr(pid int, elff, symbol string) (*addrWithLen, error) {
+	t := &tracee{pid}
+	return t.getSymAddr(elff, symbol)
+}
+
+// getSymAddr returns the offset and length of a file-mapped symbol (i.e. *not* .bss) in the
+// tracee.
+func (t *tracee) getSymAddr(elff, symbol string) (*addrWithLen, error) {
 	sym, err := getELFSymAddr(elff, symbol)
 	if err != nil {
 		return nil, fmt.Errorf("can't determine address of %q in ELF %q: %v", symbol, elff, err)
 	}
 
-	m, err := getExecutableMapping(pid, elff)
+	m, err := t.findMapping(addr(sym.Value), elff)
 	if err != nil {
-		return nil, fmt.Errorf("can't determine executable mapping of %q for PID %d: %v", elff, pid, err)
+		return nil, fmt.Errorf("can't determine mapping of %q for %v: %v", elff, t, err)
 	}
 
 	if sym.Value+sym.Size > uint64(m.l) {
@@ -203,7 +216,6 @@ func getPIDSymAddr(pid int, elff, symbol string) (*addrWithLen, error) {
 	}
 
 	off := m.a + addr(sym.Value)
-
 	ret := &addrWithLen{a: off, l: uint(sym.Size)}
 
 	return ret, nil
@@ -229,10 +241,8 @@ func (t *tracee) attach() (func(), error) {
 	if _, err := syscall.Wait4(t.pid, &ws, 0, nil); err != nil {
 		return nil, fmt.Errorf("can't wait for tracee with PID %d: %v", t.pid, err)
 	}
-	log.Printf("waitpid(%d) = %#v", t.pid, ws)
 
 	return func() {
-		log.Printf("Note: If the UI gets stuck, run pkill -CONT dtv_svc")
 		if err := syscall.PtraceDetach(t.pid); err != nil {
 			warning.Printf("Can't detach from %v: %v", t, err)
 		}
@@ -551,6 +561,86 @@ func (t *tracee) dlclose(handle word) error {
 	return nil
 }
 
+// word2bytes converts a word to a byte slice with the word in little-endian encoding.
+func word2bytes(w word) []byte {
+	ret := make([]byte, 4)
+	binary.LittleEndian.PutUint32(ret, uint32(w))
+	return ret
+}
+
+// bytes2word returns a word from a little-endian encoded byte slice.
+func bytes2word(bs []byte) word {
+	if len(bs) != 4 {
+		log.Panicf("len(bs) = %d (%#v), want 4", len(bs), bs)
+	}
+	return word(binary.LittleEndian.Uint32(bs))
+}
+
+// loadSO loads filename into the tracee and stores the dlopen() handle at unloadHandleSymbol,
+// which must reside in a loadable section. If the handle can not be stored, the library is
+// immediately dlclose()d.
+func (t *tracee) loadSO(filename string) error {
+	hdl, err := t.dlopen(filename)
+	if err != nil {
+		return fmt.Errorf("can't dlopen(%q): %v", filename, err)
+	}
+
+	cleanup := func(olderr error) error {
+		if err := t.dlclose(hdl); err != nil {
+			err = fmt.Errorf("can't dlclose(%v) (%q): %v", hdl, *flagSOFile, err)
+			if olderr != nil {
+				return fmt.Errorf("%v; additionally %v, while cleaning up", olderr, err)
+			}
+			return err
+		}
+		return olderr
+	}
+
+	hsym, err := getPIDSymAddr(t.pid, filename, unloadHandleSymbol)
+	if err != nil {
+		warning.Printf("Can't find symbol to store unload handle in; dlclose()ing immediately: %v", err)
+		return cleanup(nil)
+	}
+
+	if hsym.l != 4 {
+		return cleanup(fmt.Errorf("unloadHandleSymbol %v is not exactly 4 bytes long", hsym))
+	}
+
+	if err := t.poke(hsym.a, word2bytes(hdl)); err != nil {
+		return cleanup(fmt.Errorf("can't store dlopen handle at %v: %v", hsym, err))
+	}
+
+	log.Printf("Stored dlopen handle %v at %v", hdl, hsym)
+	return nil
+}
+
+// unloadSO dlclose()s filename, which must have been loaded previously by loadSO.
+// XXX: This determines the symbol offset from the .so on disk, which might have been replaced.
+// Not sure how to get a handle to the original one; keep an fd open on loadSO()?
+func (t *tracee) unloadSO(filename string) error {
+	hsym, err := getPIDSymAddr(t.pid, filename, unloadHandleSymbol)
+	if err != nil {
+		return fmt.Errorf("can't find unload handle symbol %q: %v", unloadHandleSymbol, err)
+	}
+
+	if hsym.l != 4 {
+		return fmt.Errorf("unloadHandleSymbol %v is not exactly 4 bytes long", hsym)
+	}
+
+	hdl, err := t.peek(hsym)
+	if err != nil {
+		return fmt.Errorf("can't peek unloadHandleSymbol %v: %v", hsym, err)
+	}
+
+	hdlw := bytes2word(hdl)
+	if err := t.dlclose(hdlw); err != nil {
+		return fmt.Errorf("can't dlclose(%v=%v): %v", unloadHandleSymbol, hdlw, err)
+	}
+
+	log.Printf("Library %q with handle %v unloaded.", filename, hdlw)
+	return nil
+}
+
 // main attaches to the tracee and performs the action specified by --action.
 func main() {
 	flag.Parse()
@@ -581,13 +671,15 @@ func main() {
 
 		log.Printf("getpid() = %d", pidw)
 
-	case "inject-so":
-		hdl, err := t.dlopen(*flagSOFile)
-		if err != nil {
-			log.Fatalf("can't dlopen(%q): %v", *flagSOFile, err)
+	case "load-so":
+		if err := t.loadSO(*flagSOFile); err != nil {
+			log.Fatalf("Can't load %q into process: %v", *flagSOFile, err)
 		}
-		defer warnOnError(func() error { return t.dlclose(hdl) }, "can't dlclose(%v) (%q)", hdl, *flagSOFile)
-		log.Printf("dlopen(%q) = %v", *flagSOFile, hdl)
+
+	case "unload-so":
+		if err := t.unloadSO(*flagSOFile); err != nil {
+			log.Fatalf("Can't unload %q from process: %v", *flagSOFile, err)
+		}
 
 	default:
 		log.Fatalf("Unknown action %q.", *flagAction)
