@@ -209,10 +209,12 @@ func getPIDSymAddr(pid int, elff, symbol string) (*addrWithLen, error) {
 	return ret, nil
 }
 
+// tracee is a process that can be traced.
 type tracee struct {
 	pid int
 }
 
+// String implements fmt.Stringer.
 func (t *tracee) String() string {
 	return fmt.Sprintf("%T{pid=%d}", t, t.pid)
 }
