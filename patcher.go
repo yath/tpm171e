@@ -489,6 +489,25 @@ func (t *tracee) injectCall(proc addr, args ...word) (word, error) {
 	return ret, nil
 }
 
+// readString reads a NUL-terminated string from the tracee’s address space.
+func (t *tracee) readString(a addr) (string, error) {
+	ret := []byte{}
+	pos := a
+	for {
+		cs, err := t.peek(&addrWithLen{pos, 1})
+		if err != nil {
+			return "", fmt.Errorf("can't read string at %v+%d: %v", a, pos-a, err)
+		}
+		c := cs[0]
+		if c == 0 {
+			break
+		}
+		ret = append(ret, c)
+		pos++
+	}
+	return string(ret), nil
+}
+
 // allocString allocates a NUL-terminated string in the tracee’s address space.
 func (t *tracee) allocString(s string) (*addrWithLen, error) {
 	cstr, err := syscall.ByteSliceFromString(s)
@@ -527,6 +546,45 @@ func warnOnError(f func() error, ft string, args ...interface{}) {
 	}
 }
 
+const (
+	// dlopen flags
+	RTLD_LAZY     = 0x00001
+	RTLD_NOW      = 0x00002
+	RTLD_NOLOAD   = 0x00004
+	RTLD_DEEPBIND = 0x00008
+	RTLD_GLOBAL   = 0x00100
+	RTLD_LOCAL    = 0
+	RTLD_NODELETE = 0x01000
+
+	// special handles
+	RTLD_NEXT    = ^word(0)
+	RTLD_DEFAULT = 0
+)
+
+// dlerror returns an error from dlerror() in the tracee, if any.
+func (t *tracee) dlerror() error {
+	dlerror, err := getPIDSymAddr(t.pid, *flagDLLib, "dlerror")
+	if err != nil {
+		return fmt.Errorf("can't find dlerror in %v: %v", t, err)
+	}
+
+	msgp, err := t.injectCall(dlerror.a)
+	if err != nil {
+		return fmt.Errorf("can't call dlerror(): %v", err)
+	}
+
+	if msgp == 0 {
+		return nil
+	}
+
+	msg, err := t.readString(addr(msgp))
+	if err != nil {
+		return fmt.Errorf("can't read string returned from dlerror(): %v", err)
+	}
+
+	return errors.New(msg)
+}
+
 // dlopen calls dlopen (defined in *flagDLLib) with the given filename in the tracee.
 func (t *tracee) dlopen(filename string) (word, error) {
 	dlopen, err := getPIDSymAddr(t.pid, *flagDLLib, "dlopen")
@@ -540,7 +598,36 @@ func (t *tracee) dlopen(filename string) (word, error) {
 	}
 	defer warnOnError(func() error { return t.free(cfilename) }, "can't free string from dlopen(%q) in %v", filename, t)
 
-	return t.injectCall(dlopen.a, word(cfilename.a), 2 /* RTLD_NOW */)
+	hdl, err := t.injectCall(dlopen.a, word(cfilename.a), RTLD_NOW|RTLD_GLOBAL)
+	if err == nil && hdl == 0 {
+		err = t.dlerror()
+	}
+	return hdl, err
+}
+
+// dlsym calls dlsym (defined in *flagDLLib) with the given handle and symbol name in the tracee.
+func (t *tracee) dlsym(handle word, symbol string) (word, error) {
+	dlsym, err := getPIDSymAddr(t.pid, *flagDLLib, "dlsym")
+	if err != nil {
+		return 0, fmt.Errorf("can't find dlsym in %v: %v", t, err)
+	}
+
+	csymbol, err := t.allocString(symbol)
+	if err != nil {
+		return 0, fmt.Errorf("can't allocate string for dlsym(%v, %q) in %v: %v", handle, symbol, t, err)
+	}
+	defer warnOnError(func() error { return t.free(csymbol) }, "can't free string from dlsym(%v, %q) in %v", handle, symbol, t)
+
+	_ = t.dlerror() // clear
+	ret, err := t.injectCall(dlsym.a, handle, word(csymbol.a))
+
+	if err == nil {
+		if derr := t.dlerror(); derr != nil {
+			err = derr
+		}
+	}
+
+	return ret, err
 }
 
 // dlclose calls dlclose (defined in *flagDLLib) for the given handle in the tracee.
@@ -555,7 +642,7 @@ func (t *tracee) dlclose(handle word) error {
 		return fmt.Errorf("can't inject call to dlclose: %v", err)
 	}
 	if ret != 0 {
-		return fmt.Errorf("dlclose(%v) = %v, expected 0", handle, ret)
+		return t.dlerror()
 	}
 
 	return nil
@@ -615,16 +702,10 @@ func (t *tracee) loadSO(filename string) error {
 }
 
 // unloadSO dlclose()s filename, which must have been loaded previously by loadSO.
-// XXX: This determines the symbol offset from the .so on disk, which might have been replaced.
-// Not sure how to get a handle to the original one; keep an fd open on loadSO()?
 func (t *tracee) unloadSO(filename string) error {
 	hsym, err := getPIDSymAddr(t.pid, filename, unloadHandleSymbol)
 	if err != nil {
 		return fmt.Errorf("can't find unload handle symbol %q: %v", unloadHandleSymbol, err)
-	}
-
-	if hsym.l != 4 {
-		return fmt.Errorf("unloadHandleSymbol %v is not exactly 4 bytes long", hsym)
 	}
 
 	hdl, err := t.peek(hsym)
@@ -680,6 +761,10 @@ func main() {
 		if err := t.unloadSO(*flagSOFile); err != nil {
 			log.Fatalf("Can't unload %q from process: %v", *flagSOFile, err)
 		}
+
+	case "dlsym":
+		sym, err := t.dlsym(RTLD_DEFAULT, unloadHandleSymbol)
+		log.Printf("t.dlsym = (%v, %v)", sym, err)
 
 	default:
 		log.Fatalf("Unknown action %q.", *flagAction)
