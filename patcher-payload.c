@@ -8,7 +8,6 @@ extern int strftime(char *s, int, const char *, const void *);
 extern int strlen(const char *);
 #define NULL ((void *)0)
 
-volatile void *unload_handle __attribute__((section(".text")));
 static int fd = -1;
 
 __attribute__((constructor)) static void yathtest() {
