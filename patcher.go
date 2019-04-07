@@ -38,6 +38,9 @@ var (
 // unloadSOMaxTries specifies how often to try dlclose() on a previously-loaded library.
 const unloadSOMaxTries = 10
 
+// loadSOFlags defines the standard dlopen() flags for loadSO.
+const loadSOFlags = RTLD_NOW | RTLD_GLOBAL
+
 // getELFSymAddr returns the *elf.Symbol of a symbol in an ELF file.
 func getELFSymAddr(filename, symbol string) (*elf.Symbol, error) {
 	f, err := elf.Open(filename)
@@ -679,11 +682,11 @@ func (t *tracee) loadSO(filename string) error {
 		return fmt.Errorf("can't unload previous instance of %q: %v", filename, err)
 	}
 
-	hdl, err := t.dlopen(filename, RTLD_NOW)
+	hdl, err := t.dlopen(filename, loadSOFlags)
 	if err != nil {
-		return fmt.Errorf("can't dlopen(%q): %v", filename, err)
+		return fmt.Errorf("can't dlopen(%q, 0x%x): %v", filename, loadSOFlags, err)
 	}
-	log.Printf("dlopen(%q, RTLD_NOW) = %v", filename, hdl)
+	log.Printf("dlopen(%q, 0x%x) = %v", filename, loadSOFlags, hdl)
 	return nil
 }
 
@@ -691,9 +694,9 @@ var errNotLoaded = errors.New("library not loaded")
 
 // unloadSO dlclose()s filename and verifies whether it was successfully unloaded.
 func (t *tracee) unloadSO(filename string) error {
-	hdl, err := t.dlopen(filename, RTLD_NOW|RTLD_NOLOAD)
+	hdl, err := t.dlopen(filename, loadSOFlags|RTLD_NOLOAD)
 	if err != nil {
-		return fmt.Errorf("can't dlopen(%q, RTLD_NOW|RTLD_NOLOAD) for closing: %v", filename, err)
+		return fmt.Errorf("can't dlopen(%q, 0x%x|RTLD_NOLOAD) for closing: %v", filename, loadSOFlags, err)
 	}
 	if hdl == 0 {
 		return errNotLoaded
@@ -711,9 +714,9 @@ func (t *tracee) unloadSO(filename string) error {
 		}
 	}
 
-	newhdl, err := t.dlopen(filename, RTLD_NOW|RTLD_NOLOAD)
+	newhdl, err := t.dlopen(filename, loadSOFlags|RTLD_NOLOAD)
 	if err != nil {
-		return fmt.Errorf("can't dlopen(%q, RTLD_NOW|RTLD_NOLOAD) for verification: %v", filename, err)
+		return fmt.Errorf("can't dlopen(%q, 0x%x|RTLD_NOLOAD) for verification: %v", filename, loadSOFlags, err)
 	}
 
 	if newhdl != 0 {
