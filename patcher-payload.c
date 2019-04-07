@@ -141,6 +141,9 @@ static int find_got_phdr(struct dl_phdr_info *info, size_t size UNUSED, struct p
         if (info->phdr[i].type != PT_LOAD || (info->phdr[i].flags & PF_RW) != PF_RW)
             continue;
 
+        if (strstr(info->name, "patcher-payload")) // XXX
+            continue;
+
         void *start = info->addr + info->phdr[i].vaddr;
         void *end = start + info->phdr[i].memsz;
 
