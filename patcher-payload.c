@@ -1,38 +1,50 @@
-extern int creat(const char *, int);
-extern int write(int, char *, int);
-extern int close(int);
-extern void _exit(int);
-extern int time(int *);
-extern void *localtime(const int *);
-extern int strftime(char *s, int, const char *, const void *);
-extern int strlen(const char *);
-#define NULL ((void *)0)
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <string.h>
+#include <time.h>
 
-static int fd = -1;
+#define LOGFILE "/data/local/tmp/patcher-payload.log"
+#define LOGFILE_MODE "w" // fopen() mode; 'a'ppend or 'w'rite (with truncation).
 
-__attribute__((constructor)) static void yathtest() {
-    char buf[256];
+static FILE *logf = NULL;
 
-    int t = time(NULL);
-    void *lt = localtime(&t);
-    strftime(buf, sizeof(buf), "[%F %T] ohai\n", lt);
-
-    fd = creat("/data/local/tmp/yath.log", 0666);
-    if (fd < 0)
+static void do_log(const char *filename, int lineno, const char *format, ...) {
+    if (!logf)
         return;
-    write(fd, buf, strlen(buf));
+
+    char tsbuf[256] = {0};
+    time_t t = time(NULL);
+    if (!strftime(tsbuf, sizeof(tsbuf)-1, "[%F %T] ", localtime(&t)))
+        tsbuf[0] = '\0';
+    fprintf(logf, "%s%s:%d: ", tsbuf, filename, lineno);
+
+    va_list args;
+    va_start(args, format);
+    vfprintf(logf, format, args);
+    va_end(args);
+
+    if (*format && format[strlen(format)-1] != '\n')
+        fputc('\n', logf);
+
+    fflush(logf);
 }
 
-__attribute__((destructor)) static void bye() {
-    char buf[256];
+#define log(...) do_log(__FILE__, __LINE__, __VA_ARGS__)
 
-    if (fd < 0)
+__attribute__((constructor)) static void init() {
+    if (logf)
+        fclose(logf);
+
+    logf = fopen(LOGFILE, LOGFILE_MODE);
+    if (!logf)
         return;
+    log("Initialized.");
+}
 
-    int t = time(NULL);
-    void *lt = localtime(&t);
-    strftime(buf, sizeof(buf), "[%F %T] cu\n", lt);
+__attribute__((destructor)) static void fini() {
+    log("Tearing down.");
 
-    write(fd, buf, strlen(buf));
-    close(fd);
+    if (fclose(logf) == 0)
+        logf = NULL;
 }
