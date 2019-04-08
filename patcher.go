@@ -39,7 +39,7 @@ var (
 const unloadSOMaxTries = 10
 
 // loadSOFlags defines the standard dlopen() flags for loadSO.
-const loadSOFlags = RTLD_NOW | RTLD_GLOBAL
+const loadSOFlags = RTLD_NOW
 
 // getELFSymAddr returns the *elf.Symbol of a symbol in an ELF file.
 func getELFSymAddr(filename, symbol string) (*elf.Symbol, error) {
