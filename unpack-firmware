@@ -77,7 +77,8 @@ for zip in "$outdir"/*.zip; do
         continue
     fi
 
-    rm -vf "$zip"
+    img="${zip%.zip}" # system.img.zip -> system.img, for system.img.{sh,lst}.
+    rm -vf "$zip" "$img".sh "$img".lst
 done
 
 # Concatenate system image
