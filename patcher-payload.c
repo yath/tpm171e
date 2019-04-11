@@ -5,11 +5,24 @@
 #include <string.h>
 #include <time.h>
 
+#include "patcher-payload.h"
+
 #define LOGFILE "/data/local/tmp/patcher-payload.log"
 #define LOGFILE_MODE "w" // fopen() mode; 'a'ppend or 'w'rite (with truncation).
 
+#define OWN_LIBNAME "patcher-payload" // Our own name, for skipping the GOT patching.
+
+#define MAIN_PROCESS_NAME "dtv_svc" // Name of the main binary (dl* just return "").
+
+#define UNUSED __attribute__((unused))
+
+// Log file, opened in init().
 static FILE *logf = NULL;
 
+// A machine word.
+typedef uint32_t word;
+
+// Log handler; to be used with the log() macro that passes file and line.
 __attribute__((format(printf, 3, 4)))
 static void do_log(const char *filename, int lineno, const char *format, ...) {
     if (!logf)
@@ -32,71 +45,29 @@ static void do_log(const char *filename, int lineno, const char *format, ...) {
     fflush(logf);
 }
 
+// Log with current filename and line.
 #define log(...) do_log(__FILE__, __LINE__, __VA_ARGS__)
 
-#define PROT_NONE    0x00
-#define PROT_READ    0x04
-#define PROT_WRITE   0x02
-#define PROT_EXEC    0x01
-extern int mprotect(void *addr, size_t len, int prot);
-
-#define PF_X        (1 << 0)    /* Segment is executable */
-#define PF_W        (1 << 1)    /* Segment is writable */
-#define PF_R        (1 << 2)    /* Segment is readable */
-
-#define PF_RW (PF_R|PF_W)
-
-#define PT_NULL     0       /* Program header table entry unused */
-#define PT_LOAD     1       /* Loadable program segment */
-#define PT_DYNAMIC  2       /* Dynamic linking information */
-/* […] rest omitted for brevity */
-
-struct elf32_phdr {
-    uint32_t type;    /* Segment type */
-    uint32_t offset;  /* Segment file offset */
-    uint32_t vaddr;   /* Segment virtual address */
-    uint32_t paddr;   /* Segment physical address */
-    uint32_t filesz;  /* Segment size in file */
-    uint32_t memsz;   /* Segment size in memory */
-    uint32_t flags;   /* Segment flags */
-    uint32_t align;   /* Segment alignment */
+// A request to patch each loaded library’s GOT with pointers to oldval pointing to newval.
+struct patch_got_req {
+    word oldval;
+    word newval;
 };
 
-struct dl_phdr_info {
-    void *addr;                    /* Base address of object */
-    const char *name;              /* Name of object */
-    const struct elf32_phdr *phdr; /* Pointer to array of ELF program headers */
-    uint16_t phnum;                /* # of items in phdr */
+// An item in the undo_list, for unpatching GOTs in fini().
+struct undo_item {
+    word *addr;
+    word oldval;
 };
 
-extern int dl_iterate_phdr(void *callback, void *data);
+// Patched words with their old value.
+#define UNDO_LIST_SIZE 256
+static struct undo_item undo_list[UNDO_LIST_SIZE];
 
-#define RTLD_LAZY   0x00001 /* Lazy function call binding.  */
-#define RTLD_NOW    0x00002 /* Immediate function call binding.  */
-#define RTLD_BINDING_MASK   0x3 /* Mask of binding time value.  */
-#define RTLD_NOLOAD 0x00004 /* Do not load the object.  */
-#define RTLD_DEEPBIND   0x00008 /* Use deep binding.  */
-
-extern void *dlsym(void *hdl, const char *name);
-extern void *dlopen(const char *, int);
-extern int dlclose(void *);
-
-#define UNUSED __attribute__((unused))
+// Number of undo_list elements populated. Top of stack is undo_list[undo_size-1].
+static unsigned int undo_size = 0;
 
 static char *(*orig_getval)(int16_t grp, char *cfg, int32_t *value) = NULL;
-
-struct patch_got_req {
-    void *oldval;
-    void *newval;
-};
-
-struct undo_item {
-    uint32_t *addr;
-    uint32_t oldval;
-};
-
-static struct undo_item undo[256];
-static unsigned int nundo = 0;
 
 static char *my_getval(int16_t grp, char *cfg, int32_t *value) {
     char *ret = orig_getval(grp, cfg, value);
@@ -104,17 +75,26 @@ static char *my_getval(int16_t grp, char *cfg, int32_t *value) {
     return ret;
 }
 
-static int patch_got(void *start, void *end, const char *filename, struct patch_got_req *req) {
+// Patch a GOT as described in req. The GOT is expected to be within start-end and contain the
+// value to patch at most once. (We can’t really easily tell where the GOT in the ELF segment
+// is, so we search all of it and if we found the value twice, the chances of either of them
+// being some other random data is nonzero.)
+static int patch_got(word *start, word *end, const char *filename, struct patch_got_req *req) {
+    if (strstr(filename, OWN_LIBNAME))
+        return 0;
+
     if (!*filename)
-        filename = "dtv_svc";
+        filename = MAIN_PROCESS_NAME;
 
-    uint32_t *off = NULL;
+    word *off = NULL;
 
-    for (uint32_t *p = start; p < (uint32_t *)end; p++) {
-        if (*p != (uint32_t)req->oldval)
+    for (word *p = start; p < end; p++) {
+        if (*p != req->oldval)
             continue;
+
         if (off) {
-            log("patch_got(%p, %p): found old value twice (%p and %p), not patching.", start, end, off, p);
+            log("patch_got(%p, %p, \"%s\"): found old value twice (at %p and at %p), not patching.",
+                    start, end, filename, off, p);
             return -1;
         }
         off = p;
@@ -123,25 +103,25 @@ static int patch_got(void *start, void *end, const char *filename, struct patch_
     if (!off)
         return 0;
 
-    if (++nundo > sizeof(undo)) {
-        log("can't store more than %d undo items", sizeof(undo));
+    if (++undo_size > sizeof(undo_list)) {
+        log("Can't store more than %d undo items, increase UNDO_LIST_SIZE.", sizeof(undo_list));
         return -1;
     }
 
-    undo[nundo-1].addr = off;
-    undo[nundo-1].oldval = *off;
-    *off = (uint32_t)req->newval;
-    log("Patched %p 0x%08lx -> 0x%08lx", off, undo[nundo-1].oldval, *off);
+    undo_list[undo_size-1].addr = off;
+    undo_list[undo_size-1].oldval = *off;
+    *off = req->newval;
+    log("Patched GOT of %s at %p (from 0x%08lx to 0x%08lx)", filename, off,
+            undo_list[undo_size-1].oldval, *off);
 
     return 0;
 }
 
+// Callback for dl_iterate_phdr. Walks over all ELF segments and calls patch_got for each that
+// is likely to contain a GOT (i.e. is of type LOAD and read- and writable).
 static int find_got_phdr(struct dl_phdr_info *info, size_t size UNUSED, struct patch_got_req *req) {
     for (int i = 0; i < info->phnum; i++) {
         if (info->phdr[i].type != PT_LOAD || (info->phdr[i].flags & PF_RW) != PF_RW)
-            continue;
-
-        if (strstr(info->name, "patcher-payload")) // XXX
             continue;
 
         void *start = info->addr + info->phdr[i].vaddr;
@@ -155,6 +135,7 @@ static int find_got_phdr(struct dl_phdr_info *info, size_t size UNUSED, struct p
 }
 
 
+// Sets up logging and installs all hooks.
 __attribute__((constructor)) static void init() {
     if (logf)
         fclose(logf);
@@ -170,7 +151,7 @@ __attribute__((constructor)) static void init() {
         return;
     }
 
-    void *hdl = dlopen("libmtkapp.so", 6);
+    void *hdl = dlopen("libmtkapp.so", RTLD_NOW|RTLD_NOLOAD);
     const char *symname = "a_mtktvapi_config_get_value";
     orig_getval = dlsym(hdl, symname);
 
@@ -184,8 +165,8 @@ __attribute__((constructor)) static void init() {
 
     log("Patching GOTs referencing %s = %p", symname, orig_getval);
     struct patch_got_req req = {
-        .oldval = orig_getval,
-        .newval = my_getval,
+        .oldval = (word)orig_getval,
+        .newval = (word)my_getval,
     };
     dl_iterate_phdr(find_got_phdr, &req);
 
@@ -193,13 +174,14 @@ __attribute__((constructor)) static void init() {
     log("Initialized");
 }
 
+// Uninstalls all hooks and closes the logfile.
 __attribute__((destructor)) static void fini() {
     log("Tearing down.");
 
-    while (nundo > 0) {
-        *(undo[nundo-1].addr) = undo[nundo-1].oldval;
-        log("Undid GOT patch at %p", undo[nundo-1].addr);
-        nundo--;
+    while (undo_size > 0) {
+        *(undo_list[undo_size-1].addr) = undo_list[undo_size-1].oldval;
+        log("Undid GOT patch at %p", undo_list[undo_size-1].addr);
+        undo_size--;
     }
 
     if (fclose(logf) == 0)

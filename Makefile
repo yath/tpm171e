@@ -35,8 +35,8 @@ loader: loader.go assets.go
 cli: cli.go
 	GOARCH=arm $(GO) build -o $@ $<
 
-patcher-payload.so: patcher-payload.c
-	$(CROSS)$(CC) $(TARGET_CFLAGS) -fPIC -shared -nostdlib -o $@ $<
+patcher-payload.so: patcher-payload.c patcher-payload.h
+	$(CROSS)$(CC) $(TARGET_CFLAGS) -fPIC -shared -nostdlib -I. -o $@ $<
 
 patcher: patcher.go
 	GOARCH=arm $(GO) build -o $@ $<
