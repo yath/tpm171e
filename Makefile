@@ -17,7 +17,12 @@ TARGET_CFLAGS = $(CFLAGS) -mcpu=cortex-a17 -mfpu=neon
 
 CROSS := arm-none-eabi-
 
-RUN_CLI_DIR := /data/local/tmp
+INSTALL_DIR := /data/local/tmp
+INSTALL_TARGETS := loader patcher patcher-payload.so
+
+.PHONY: install
+install: $(INSTALL_TARGETS)
+	adb push $^ $(INSTALL_DIR)
 
 ## root shell
 
@@ -98,7 +103,7 @@ dtv_driver.lds: dtv_driver.ko threaddump.lds
 
 .PHONY: run-cli
 run-cli: cli
-	$(ADB) push cli $(RUN_CLI_DIR)/cli && $(ADB) shell $(RUN_CLI_DIR)/cli $(CLICOMMAND)
+	$(ADB) push cli $(INSTALL_DIR)/cli && $(ADB) shell $(INSTALL_DIR)/cli $(CLICOMMAND)
 
 .PHONY: clean
 clean:
