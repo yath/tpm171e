@@ -1,0 +1,46 @@
+#!/system/bin/sh
+set -euo pipefail
+
+uninstall() {
+    pkg="$1"
+    printf "Uninstall '%s'? [y/N] " "$pkg"
+    read ok || ok=""
+    [ "$ok" = "y" ] && pm uninstall -k --user 0 "$pkg" || true
+}
+
+for pkg in $(pm list packages -3 | sed -e 's/^package://'); do
+    uninstall "$pkg"
+done
+
+# https://toengel.net/philipsblog/supportforum/topic/philips-neue-firmware-fuer-hevc-via-tv-tuner-fuer-2015er-tvs-der-serien-71x0-7600-und-8700-version-6-172-0/page/4/#post-177900
+for pkg in \
+    org.droidtv.facebookshare \
+    com.android.providers.calendar \
+    com.teamviewer.quicksupport.addon.tpvision2k15_v1 \
+    org.droidtv.demome \
+    org.droidtv.nettvbrowser \
+    com.android.inputmethod.pinyin \
+    com.google.android.music \
+    com.android.printspooler \
+    com.android.dreams.basic \
+    com.google.android.syncadapters.contacts \
+    com.android.camera \
+    com.google.android.tts \
+    com.google.android.videos \
+    com.google.android.feedback \
+    com.teamviewer.quicksupport.market \
+    com.google.android.exoplayer.demo \
+    com.android.phone \
+    com.android.location.fused \
+    com.google.android.play.games \
+    com.android.providers.contacts \
+    org.droidtv.nettvadvert \
+    org.droidtv.nettvregistration \
+    org.droidtv.nettvrecommender
+do
+        if ! pm path "$pkg" > /dev/null; then
+            printf "Package '%s' not installed.\n" "$pkg"
+        else
+            uninstall "$pkg"
+        fi
+done

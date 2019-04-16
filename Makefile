@@ -18,7 +18,7 @@ TARGET_CFLAGS = $(CFLAGS) -mcpu=cortex-a17 -mfpu=neon
 CROSS := arm-none-eabi-
 
 INSTALL_DIR := /data/local/tmp
-INSTALL_TARGETS := loader patcher patcher-payload.so cli
+INSTALL_TARGETS := loader patcher patcher-payload.so cli decrap
 
 .PHONY: install
 install: $(INSTALL_TARGETS)
