@@ -76,7 +76,7 @@ static unsigned int undo_size = 0;
 
 // Initializes an override defined by DEFINE_OVERRIDE.
 #define INIT_OVERRIDE(libname, symname) \
-    do_override(libname, #symname, (void **)&orig_##symname, my_##symname)
+    do_override(libname, #symname, (void (**)())&orig_##symname, my_##symname)
 
 // Override a_mtktvapi_config_get_value and print args and return value.
 DEFINE_OVERRIDE(char *, a_mtktvapi_config_get_value, int16_t grp, char *cfg, int32_t *value) {
@@ -145,7 +145,7 @@ static int find_got_phdr(struct dl_phdr_info *info, size_t size UNUSED, struct p
 }
 
 // Overrides symname from libname with override, storing the original symbol address in *orig.
-static void do_override(const char *libname, const char *symname, void **orig, void *override) {
+static void do_override(const char *libname, const char *symname, void (**orig)(), void *override) {
     if (*orig) {
         log("orig_%s already points to %p, not overriding again", symname, *orig);
         return;
