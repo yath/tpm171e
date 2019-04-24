@@ -67,11 +67,21 @@ static struct undo_item undo_list[UNDO_LIST_SIZE];
 // Number of undo_list elements populated. Top of stack is undo_list[undo_size-1].
 static unsigned int undo_size = 0;
 
-static char *(*orig_getval)(int16_t grp, char *cfg, int32_t *value) = NULL;
+// Define a function to be overridden. The original function is available as orig_symbol, this
+// macro emits the declaration for my_symbol.
+#define DEFINE_OVERRIDE(rettype, symname, ...) \
+    static rettype (*orig_##symname)(__VA_ARGS__) = NULL; \
+    \
+    static rettype my_##symname(__VA_ARGS__)
 
-static char *my_getval(int16_t grp, char *cfg, int32_t *value) {
-    char *ret = orig_getval(grp, cfg, value);
-    log("orig_getval(grp=%d, cfg=%s, *value=%ld) = %s", grp, cfg, (value?*value:0xDEAD), ret);
+// Initializes an override defined by DEFINE_OVERRIDE.
+#define INIT_OVERRIDE(libname, symname) \
+    do_override(libname, #symname, (void **)&orig_##symname, my_##symname)
+
+// Override a_mtktvapi_config_get_value and print args and return value.
+DEFINE_OVERRIDE(char *, a_mtktvapi_config_get_value, int16_t grp, char *cfg, int32_t *value) {
+    char *ret = orig_a_mtktvapi_config_get_value(grp, cfg, value);
+    log("a_mtktvapi_config_get_value(grp=%d, cfg=%s, *value=%ld) = %s", grp, cfg, (value?*value:0xDEAD), ret);
     return ret;
 }
 
@@ -134,6 +144,31 @@ static int find_got_phdr(struct dl_phdr_info *info, size_t size UNUSED, struct p
     return 0;
 }
 
+// Overrides symname from libname with override, storing the original symbol address in *orig.
+static void do_override(const char *libname, const char *symname, void **orig, void *override) {
+    if (*orig) {
+        log("orig_%s already points to %p, not overriding again", symname, *orig);
+        return;
+    }
+
+    void *hdl = dlopen(libname, RTLD_NOW|RTLD_NOLOAD);
+    *orig = dlsym(hdl, symname);
+
+    if (hdl)
+        dlclose(hdl);
+
+    if (!*orig) {
+        log("Can't find %s in hdl %p (%s)", symname, hdl, libname);
+        return;
+    }
+
+    log("Patching GOTs referencing %s = %p", symname, *orig);
+    struct patch_got_req req = {
+        .oldval = (word)*orig,
+        .newval = (word)override,
+    };
+    dl_iterate_phdr(find_got_phdr, &req);
+}
 
 // Sets up logging and installs all hooks.
 __attribute__((constructor)) static void init() {
@@ -145,32 +180,7 @@ __attribute__((constructor)) static void init() {
         return;
 
     log("Initializing");
-
-    if (orig_getval) {
-        log("orig_getval already points to %p, skipping GOT patching", orig_getval);
-        return;
-    }
-
-    void *hdl = dlopen("libmtkapp.so", RTLD_NOW|RTLD_NOLOAD);
-    const char *symname = "a_mtktvapi_config_get_value";
-    orig_getval = dlsym(hdl, symname);
-
-    if (hdl)
-        dlclose(hdl);
-
-    if (!orig_getval) {
-        log("Can't find %s in hdl %p", symname, hdl);
-        return;
-    }
-
-    log("Patching GOTs referencing %s = %p", symname, orig_getval);
-    struct patch_got_req req = {
-        .oldval = (word)orig_getval,
-        .newval = (word)my_getval,
-    };
-    dl_iterate_phdr(find_got_phdr, &req);
-
-
+    INIT_OVERRIDE("libmtkapp.so", a_mtktvapi_config_get_value);
     log("Initialized");
 }
 
