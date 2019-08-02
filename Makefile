@@ -60,6 +60,9 @@ decrypt: decrypt.c
 threaddump.txt:
 	$(MAKE) run-cli CLICOMMAND=b.da | tee $@
 
+dtv_svc.threaddump.txt:
+	$(MAKE) run-cli CLICOMMAND=b.dtvall | tee $@
+
 MEMDUMP_BASE_ADDR ?= 0xc0008000
 MEMDUMP_LEN ?= 9264960 # ls -l Image
 
