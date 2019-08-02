@@ -58,18 +58,28 @@ decrypt: decrypt.c
 
 # _Cust_dump_all_thread (b.da)
 threaddump.txt:
-	$(MAKE) run-cli CLICOMMAND=b.da | tee $@
+	$(call run-cli,b.da,$@)
 
 dtv_svc.threaddump.txt:
-	$(MAKE) run-cli CLICOMMAND=b.dtvall | tee $@
+	$(call run-cli,b.dtvall,$@)
+
+.PRECIOUS: cmdlist-guest.txt
+cmdlist-guest.txt:
+	$(call run-cli,b.scm 2)
+	$(call run-cli,ls,$@)
+
+.PRECIOUS: cmdlist-sv.txt
+cmdlist-sv.txt:
+	$(call run-cli,b.scm 0)
+	$(call run-cli,ls,$@)
 
 MEMDUMP_BASE_ADDR ?= 0xc0008000
 MEMDUMP_LEN ?= 9264960 # ls -l Image
 
 .PRECIOUS: memdump.txt
 memdump.txt:
-	$(MAKE) run-cli CLICOMMAND="b.scm 0"
-	$(MAKE) run-cli CLICOMMAND="b.mdmp $(MEMDUMP_BASE_ADDR) $(MEMDUMP_LEN)" | tee $@
+	$(call run-cli,b.scm 0)
+	$(call run-cli,b.mdmp $(MEMDUMP_BASE_ADDR) $(MEMDUMP_LEN),$@)
 
 memdump.bin: memdump.txt
 	$(PERL) -ne 'if (($$_) = /^0x.*? \| ([^|]+)/) { print chr hex for /[0-9a-f]{2}/g }' < $< > $@
@@ -104,9 +114,12 @@ dtv_driver.lds: dtv_driver.ko threaddump.lds
 	$(PERL) -nE 'say "$$2 = 0x$$1;" if /^([0-9a-f]+)\s+.\s.*\s(\S+)$$/ && hex($$1) > 0' | \
 	sort -k3 > $@
 
+run-cli = $(MAKE) run-cli CLICOMMAND="$1" TEETO="$2"
+
 .PHONY: run-cli
 run-cli: cli
-	$(ADB) push cli $(INSTALL_DIR)/cli && $(ADB) shell $(INSTALL_DIR)/cli $(CLICOMMAND)
+	$(ADB) push cli $(INSTALL_DIR)/cli
+	$(ADB) shell $(INSTALL_DIR)/cli $(CLICOMMAND)$ $(if $(TEETO),| tee $(TEETO))
 
 .PHONY: clean
 clean:

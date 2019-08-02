@@ -353,6 +353,7 @@ ir.rx.init			:ir.rx.init -c [conf] -s [sap] -t [thld]
 ir.rx.stop			:ir.rx.stop
 ir.rx.pl			:ir.rx.printlog - print irrc log buffer history
 ir.rx.rl			:ir.rx.resetlog - reset irrc log buffer history
+ir.rx.irrc			:ir.rx.irrc - key record
 rtc.d_on			:RTC.d_on
 rtc.d_off			:RTC.d_off
 rtc.d_l			:RTC.d_l
@@ -412,6 +413,8 @@ aud.mclip.gain			:Audio MixSound Clip SetGain
 aud.mclip.mda			:Allocate memory for MixSnd Dump
 aud.mclip.mdr			:Reset MixSnd Dump
 aud.mclip.mds			:Set MixSnd Dump Location
+aud.mclip.tm			:tunnel fmt and mode
+aud.mclip.tc			:tunnel command
 aud.dsp.p			:get AFIFO read/write pointer cmd ex. ptr
 aud.dsp.i			:adsp task init ex. init
 aud.dsp.pc			:Get dsp pc ex. pc
@@ -503,6 +506,7 @@ aud.a.vol.ipt			:Input trim setting
 aud.a.vol.opt			:Output trim setting
 aud.a.vol.apt			:Amixer trim setting
 aud.a.vol.opv			:Output trim setting
+aud.a.vol.bt			:Output trim backtrace
 aud.a.vol.sg			:post-processing smooth gain
 aud.a.se.avl			:AVL setting
 aud.a.se.pbt			:post-processing Bass Treble
@@ -511,6 +515,7 @@ aud.a.se.bmang			:Bass Managemant setting
 aud.a.se.mvs			:Virtual Surround Setting
 aud.a.se.mvb			:Virtual Bass setting
 aud.a.se.peq			:PEQ setting
+aud.a.se.dispeq			:Disable PEQ setting
 aud.a.se.peqr			:PEQ Rch setting
 aud.a.se.dl			:DRC limiter setting
 aud.a.se.eq			:8Band EQ setting
@@ -523,23 +528,28 @@ aud.a.se.cdnotch			:CDNotch settting
 aud.a.se.hpf			:post-processing HPF
 aud.a.se.cp			:channel split
 aud.a.se.bq			:Biquad setting
-aud.a.srs.aeq			:SRS AEQ Setting
-aud.a.srs.bt			:SRS BassTreble Setting
-aud.a.srs.cc3d			:SRS CC3D Setting
-aud.a.srs.cshp			:SRS CSHP Setting
-aud.a.srs.geq			:SRS GEQ Setting
-aud.a.srs.hl			:SRS HardLimiter Setting
-aud.a.srs.hpf			:SRS HPF Setting
-aud.a.srs.mvol			:SRS Mvol Setting
-aud.a.srs.shpf			:SRS SpaceHpf Setting
-aud.a.srs.srs3d			:SRS SRS3D Setting
-aud.a.srs.ss3d			:SRS SS3D Setting
-aud.a.srs.tshd			:SRS STTSHD Setting
-aud.a.srs.tbhd			:SRS TBHD Setting
-aud.a.srs.trud			:SRS Trudialog Setting
-aud.a.srs.tvol			:SRS TvolHD Setting
-aud.a.srs.init			:Only for SRS Cert
-aud.a.srs.getall			:Only for Adjust
+aud.a.ts3d.en			:Enable/Disable srs ts3d
+aud.a.ts3d.ts			:SRS TS3D Setting
+aud.a.ts3d.ll			:SRS Level Setting
+aud.a.ts3d.tvol			:SRS tvol Setting
+aud.a.ts3d.trud			:SRS trud Setting
+aud.a.ts3d.cc3d			:SRS cc3d Setting
+aud.a.ts3d.csd			:SRS csdecoder Setting
+aud.a.ts3d.com			:SRS Common Setting
+aud.a.ts3d.hpf			:SRS  Hpf Setting
+aud.a.ts3d.geq			:SRS geq Setting
+aud.a.ts3d.aeq			:SRS Aeq Setting
+aud.a.ts3d.mcdy			:SRS Mcdy Setting
+aud.a.ts3d.dus			:SRS dus Setting
+aud.a.ts3d.mug			:SRS Make Up Gain
+aud.a.ts3d.init			:Only for SRS init
+aud.a.ts3d.getall			:Only for Getall
+aud.a.ts3d.aeqfpset			:AEQ Filter param set
+aud.a.ts3d.mcpspset			:MCPS param set
+aud.a.ts3d.2chmcpspset			:2ch MCPS param set
+aud.a.ts3d.mchp1mcpspset			:MultiCh Path1 MCPS param set
+aud.a.ts3d.mchp2mcpspset			:MultiCh Path2 MCPS param set
+aud.a.ts3d.defset			:Default set
 aud.a.fade.fade			:Implement Fade Process
 aud.a.fade.p			:Implement Fade Process
 aud.a.fade.g			:Get current Fade volume
@@ -560,6 +570,7 @@ aud.cdec.ver			:DTS decoder set parameter
 aud.cdec.q			:DTS decoder set parameter
 aud.cdec.dtss			:DTS decoder set parameter
 aud.cdec.d			:DTS Debug
+aud.cdec.dis			:Disable cpudec
 aud.uop.qv			:DSP volume system setting
 aud.uop.fv			:Audio Master Volume fine control
 aud.uop.v			:Audio Volume control
@@ -610,6 +621,7 @@ aud.uop.adcd			:SBC Encode Test
 aud.uop.pq			:Post-Proc Query
 aud.uop.g726dec			:G726 decoder setting
 aud.uop.csum			:check sum _pbD
+aud.uop.arccap			:setarc capability
 aud.uop.eq.flag			:EQ function on/off
 aud.uop.eq.m			:EQ mode configuration
 aud.uop.eq.set			:Set EQ Table
@@ -619,6 +631,13 @@ aud.uop.sbass.cf			:Bass Treble cut-off freq
 aud.uop.sbass.bb			:Bass boost gain configuration
 aud.uop.sbass.cb			:Clear boost gain configuration
 aud.uop.sbass.q			:query sbass Table
+aud.uop.silence.flag			:silence function on/off
+aud.uop.silence.thre			:Silence Threshold configuration
+aud.uop.silence.wait			:Silence attack wait time  configuration
+aud.uop.silence.gain			:Silence attack fix gain  configuration
+aud.uop.silence.rstep			:Silence Release Step configuration
+aud.uop.silence.astep			:Silence Attack Step configuration
+aud.uop.silence.q			:query Silence configuration
 aud.uop.limiter.flag			:individual limiter flag
 aud.uop.limiter.thre			:limiter fixed mode threshold
 aud.uop.limiter.release			:limiter release rate
@@ -670,6 +689,15 @@ aud.uop.ms12.ddpenc.riscenc			:Aproc RiscEnc Test
 aud.uop.ms12.ddpenc.unsup			:Unsupported Acmod and Lfe
 aud.uop.ms12.aac.dn			:Default Dialnorm
 aud.uop.ms12.ac3.mdctbl			:MDCT BandLimit
+aud.uop.ms12.ac4.mode			:ac4 mode
+aud.uop.ms12.ac4.de			:ac4 Dialogue Enhancement gain
+aud.uop.ms12.ac4.lang			:ac4 1st Preferred Language code
+aud.uop.ms12.ac4.lang2			:ac4 2nd Preferred Language code
+aud.uop.ms12.ac4.at			:ac4 Preferred associated type of service
+aud.uop.ms12.ac4.pat			:ac4 Prefer Presentation Selection by associated type over language
+aud.uop.ms12.ac4.mainidx			:ac4 Main Presentation index to be decoded
+aud.uop.ms12.ac4.associdx			:ac4 Assoc Presentation index to be decoded
+aud.uop.ms12.ac4.xa			:MD_ID_AD_MIXING_ENABLED
 aud.t.t			:play tone
 aud.t.stop			:stop tone
 aud.t.utone			:play universal tone
@@ -736,6 +764,7 @@ aud.io.spdif.set			:SPDIF information setup
 aud.io.spdif.protect			:SPDIF copy protect setup
 aud.io.spdif.mode			:SPDIF set update mode
 aud.io.spdif.cs			:SPDIF get channel status
+aud.io.spdif.hbr			:HDMI HBR mode
 aud.io.adac.q			:Query speaker enable state
 aud.io.adac.f			:Data format ex. format 0 1
 aud.io.adac.d			:Data invert ex.  datainvert 0 1
@@ -774,6 +803,8 @@ aud.nvm.init			:Initialize NVM
 aud.nvm.pfr			:Profile Read
 aud.nvm.l			:AQ list all data on flash
 aud.nvm.aq			:AQ Read Idx
+aud.nvm.sm			:Show SoundMode value
+aud.nvm.sa			:Show Setting Assisant value
 aud.src.q			:Query ASRC status
 aud.src.t			:Enable ASRC Tracking Mode
 aud.dram.qm			:Query AUD Dram Map
@@ -1437,6 +1468,7 @@ vdp.e			:Vdp enable
 vdp.d			:Vdp disable
 vdp.r			:Vdp reset
 vdp.q			:Vdp status query
+vdp.lboxq			:lbox status query
 vdp.info			:DTV info query
 vdp.stop			:Vdp stop
 vdp.f			:Vdp freeze
@@ -1489,113 +1521,16 @@ vdp.t.d			:B2R dump registers
 vdp.wfd.al			:Active/Deactive Wfd CLI
 vdp.wfd.adj			:Set Static Latency
 vdp.wfd.ql			:WFD Latency query
+vdp.lbox.en			:LBox Detection enable
+vdp.lbox.mode			:LetterBox Detection Mode
+vdp.lbox.q			:lbox status query
+vdp.lbox.d_on			:LBOX.d_on
+vdp.lbox.d_off			:LBOX.d_off
+vdp.lbox.d_l			:LBOX.d_l
 prescale.d_on			:PRESCALE.d_on
 prescale.d_off			:PRESCALE.d_off
 prescale.d_l			:PRESCALE.d_l
 fbm.i			:Fbm init
-fbm.q			:Fbm status query
-fbm.mid			:Fbm mid setting
-fbm.s			:Fbm status
-fbm.c			:Fbm create group
-fbm.r			:Fbm release group
-fbm.rst			:Fbm reset group
-fbm.color			:Fbm set color
-fbm.ck			:Fbm check pool
-fbm.cg			:Fbm change pool
-fbm.que			:Fbm Que Empty/Display que info
-fbm.msk			:Control log output
-fbm.sdd			:set dump dir,default:/mnt/usb/sda1/
-fbm.d			:dump fb data:dump +fbgid +fbid, if dump +fbgid, will dump all displayQ and locked fb
-fbm.stq			:enable: stq 1;disable:stq 0
-fbm.fb			:Fbm Show Frame Buffer Info
-fbm.save bw mode			:Fbm save dram bw mode
-fbm.d_on			:FBM.d_on
-fbm.d_off			:FBM.d_off
-fbm.d_l			:FBM.d_l
-dbs.i			:Dbs init
-dbs.s			:Dbs stop
-dbs.go			:Dbs start
-dbs.p			:Dbs print at once
-dbs.r			:Dbs reset
-mpv.dbkt			:DBK Test
-mpv.dbkp1			:DBK Para1
-mpv.dbkp2			:DBK Para2
-mpv.ecs			:EC mode
-mpv.dbkr			:DBK Interest Region
-mpv.dbk			:DBK Mode
-mpv.dbkquery			:DBK Query
-mpv.dbkset			:DBK Setting
-mpv.mm			:MC Mode
-mpv.rr			:mpv reduce-reference Mode
-mpv.i			:Init : Create Thread, sema, INT
-mpv.t			:Termint : Terminate Thread, sema, INT
-mpv.r			:Module reset
-mpv.p			:Start to decode
-mpv.s			:Stop decoding
-mpv.ps			:Pause decoding
-mpv.sy			:Sync STC
-mpv.ec			:Set EC
-mpv.q			:Query Status
-mpv.clr			:Clear RR Dbk
-mpv.f			:Flush decoding
-mpv.d_on			:MPV.d_on
-mpv.d_off			:MPV.d_off
-mpv.d_l			:MPV.d_l
-vdec.i			:Vdec init
-vdec.p			:Vdec play
-vdec.ps			:Vdec pause
-vdec.s			:Vdec stop
-vdec.fs			:Vdec force src type
-vdec.srr			:Vdec set RR mode
-vdec.secm			:Vdec set EC mode
-vdec.ss			:Vdec set sync stc
-vdec.q			:Vdec query info
-vdec.r			:Vdec rst time profile
-vdec.d			:Vdec dram usage
-vdec.c			:Vdec capture
-vdec.bb			:Vdec set B parameter
-vdec.ds			:Vdec set dram bandwidth simulation
-vdec.mid			:Vdec mid protection
-vdec.st			:Vdec av sync test
-vdec.fd			:Set FixHDDisplay For avs part
-vdec.speed			:mm playback speed test
-vdec.vp9			:vp9 debug log option
-vdec.ml			:vdec log mode
-vdec.rp			:Print Rsv and PutQ info.
-vdec.setvdec			:vdec set status
-vdec.pvp			:start play a DTV video PID to main/sub video path
-vdec.svp			:Stop play DTV video PID 
-vdec.d_on			:VDEC.d_on
-vdec.d_off			:VDEC.d_off
-vdec.d_l			:VDEC.d_l
-vdec.rm.c			:	Force connect
-vdec.rm.q			:	Query capability
-vdec.rm.s			:	RM Set
-vomx.i			:Vomx init
-vomx.io			:vdecomx input & output log
-vomx.in			:vdecomx input log
-vomx.out			:vdecomx output log
-vomx.dbg			:vdecomx debug log
-vomx.vbs			:vdecomx verbose log
-vomx.frz			:vdecomx freeze
-vomx.d_on			:VOMX.d_on
-vomx.d_off			:VOMX.d_off
-vomx.d_l			:VOMX.d_l
-tcon.i			:Tcon init
-tcon.r			:Is Tcon ready
-tcon.tp			:Tcon test pattern
-tcon.efuse			:EFUSE check
-tcon.eh.i			:Error Handling initial
-tcon.eh.s			:Error Handling mute status
-tcon.eh.fix			:Error Handling fix function enable
-tcon.eh.mute			:Error Handling mute function enable
-tcon.eh.source			:Error Handling source select
-tcon.if.source			:IF source select
-ptp.i			:TS init
-ptp.t			:Get CPU temperature
-ptp.gtt			:Get trigger temperature
-ptp.stt			:Set trigger temperature
-ptp.source			:Set ADC source
 ptp.test			:Do test
 ptp.efuse			:Get Efuse data
 venc.q			:Query the info.of video encoder
@@ -1615,13 +1550,61 @@ venc.d_on			:VENC.d_on
 venc.d_off			:VENC.d_off
 venc.d_l			:VENC.d_l
 venc.ms.q			:Query the info.of video encoder
-venc.ms.r			:Multiscreen interaction demo: Run
-venc.ms.s			:Multiscreen interaction demo: Stop
-venc.ms.bs			:Dump Bitstream
-venc.ms.tn			:Get thumbnail test
-venc.ms.d_on			:VENC.d_on
-venc.ms.d_off			:VENC.d_off
-venc.ms.d_l			:VENC.d_l
+d.dcd			:dump caout data
+d.cap			:Capture test
+d.cbuf			:cbuf [size]
+d.cinfo			:cinfo
+d.ccci			:CC capture init
+d.ccc			:CC Capture event
+d.el			:el
+d.scrt			:scrt
+d.svt			:
+d.gss			:
+d.sfet			:FramerErrorTable
+d.sdis			:SetDbmInputSource
+d.psw			:
+d.fsp			:
+d.tsq			:tsq
+d.tsrc			:tsrc
+d.diag			:Self diagnostic test
+d.jchip			:J-chip functionality test
+d.enptslog			:
+d.fl			:
+d.ptsdrift			:
+d.tr			:Print traces
+d.dhwerr			:Debug DMX hardware errors
+d.genkey			:generate sample key
+d.pf			:print filter log
+d.eqd			:
+d.tqd			:
+d.d_on			:DMX.d_on
+d.d_off			:DMX.d_off
+d.d_l			:DMX.d_l
+d.stc.g			:Get STC
+memtest.d_on			:MEMTEST.d_on
+memtest.d_off			:MEMTEST.d_off
+memtest.d_l			:MEMTEST.d_l
+memtest.ch			:DRAM channel select
+memtest.cm			:Confirm DDR test time
+memtest.dqs			:DRAM DQS delay test
+memtest.dqso			:DRAM DQS output delay test
+memtest.ssc			:DRAM spread spectrum
+memtest.j			:DRAM Jitter check
+memtest.q			:DRAM Information Query
+cec.d_on			:CEC.d_on
+cec.d_off			:CEC.d_off
+cec.d_l			:CEC.d_l
+cec.s			:HDMI CEC send frame
+cec.ping			:CEC ping device 0 ~ 15
+cec.txtest			:CEC tx test command
+cec.rxtest			:CEC rx test command
+cec.q			:CEC query command
+cec.dl			:CEC debug level command
+cec.8032			:CEC 8032 command
+cec.i			:HDMI CEC register initial
+cec.e			:HDMI CEC Enable/disable
+cec.eep			:HDMI CEC eeprom/power down
+cec.arc			:HDMI CEC arc Enable/disable
 pdwnc.d_on			:PDWNC.d_on
 pdwnc.d_off			:PDWNC.d_off
 pdwnc.d_l			:PDWNC.d_l
@@ -1699,22 +1682,6 @@ mid.dpr			:DMARB Dynamic Priority reset
 mid.d_on			:MID.d_on
 mid.d_off			:MID.d_off
 mid.d_l			:MID.d_l
-swdmx.i			:Init software demuxer
-swdmx.o			:Open software demuxer
-swdmx.p			:Run the software demuxer to play AV
-swdmx.f			:filter the log
-swdmx.s			:Stop the software demuxer to play AV
-swdmx.q			:Query the software demuxer information
-swdmx.t			:Test the software demuxer to play AV
-swdmx.tfeeder			:Test the software feeder to swdmx
-swdmx.tmpg			:Test the software demuxer to play MPG PS
-swdmx.sp			:Set Speed (1000, 2000, -1000)
-swdmx.spos			:Set Position (0 ~ 1000)
-swdmx.enable			:enable ts prebuffer(default is enable)
-swdmx.disable			:disable ts prebuffer
-swdmx.reset			:recover ts prebuffer init status
-swdmx.multiple			:modify Req size by multiple
-swdmx.sm			:Force Change seamless info
 swdmx.disShadowBuf			:disable ShadowBuf for Ts Push Mode
 swdmx.enShadowBuf			:(default) enable ShadowBuf for Ts Push Mode
 swdmx.ddc			:[dumpLen] [dumpMode: 0-tail, !0-head] [interval] [totalDumpCnt]
@@ -1790,24 +1757,6 @@ p.d.tc			:Create TC
 p.v.reg			:Register test
 p.v.sreg			:Single Register R/W test
 p.v.wnd			:Memory Window test (SysBuild)
-p.v.pll			:PLL Test (SysBuild)
-p.v.gpio			:Test GPIO Pings
-p.v.tc			:Automatically create T_C
-p.v.pbus			:PBus Test (DrvBuild)
-p.v.tnas			:Thread Don't Assert, 0:Ast, 1:NoAst,
-p.v.st			:Stop Pcmcia Thread
-p.v.5vpc			:CI 5V Control, 0:Original, 1:Manual
-p.v.scpt			:Set Chip Type, 0:External, 1:Internal
-p.v.scdt			:Set Card Type, 0:CI, 1:POD
-p.v.sit			:Set Interface Type, 0:NFI, 1:SPI
-p.v.rstc			:Reset Card
-p.v.rst			:Reset MT8295
-p.v.sam			:Set Access Mode, 0:SDM, 1:DMA
-p.v.slt			:Start SLT procedure
-p.v.demo			:Start for Demo Program
-p.v.ckr			:Set External IC Serial TS Clk Out Rate
-p.v.dts			:Enable/Disable  Demod TS
-p.v.rt			:Set TS route
 p.c.r			:Read CI module registers
 p.c.w			:Read CI module registers
 p.c.bps			:TS bypass 8295, 0:Off, 1:ON
@@ -1828,12 +1777,6 @@ p.m.i			:Init MPOD
 p.m.r			:MPOD read
 p.m.w			:MPOD write
 p.m.oas			:MPOD open a session
-p.m.stress			:MPOD CPU Interface Stress Test
-p.m.cks			:Ckgen Register Stress Test
-p.m.ts.i			:MPOD TS Init
-p.m.ts.info			:MPOD TS Info
-p.mi.et			:Enable TS, 0:Off, 1:On
-p.mi.es			:Enable Slot, 0:Off, 1:On
 p.s.i			:Init SPI module
 p.s.r			:Reset SPI module
 p.s.sw			:SDA write

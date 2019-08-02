@@ -215,6 +215,7 @@ ir.rx.list			:ir.rx.list - list Ir key id value
 ir.rx.send			:ir.rx.send [KeyId] - send key id into ir key queue
 ir.rx.pl			:ir.rx.printlog - print irrc log buffer history
 ir.rx.rl			:ir.rx.resetlog - reset irrc log buffer history
+ir.rx.irrc			:ir.rx.irrc - key record
 rtc.d_on			:RTC.d_on
 rtc.d_off			:RTC.d_off
 rtc.d_l			:RTC.d_l
@@ -267,6 +268,7 @@ aud.uop.vbcut			:Set Virtual Bass Cutoff
 aud.uop.dm			:dual-mono steup
 aud.uop.eac3			:E-ac3 raw enable
 aud.uop.pq			:Post-Proc Query
+aud.uop.arccap			:setarc capability
 aud.uop.eq.flag			:EQ function on/off
 aud.uop.eq.m			:EQ mode configuration
 aud.uop.eq.set			:Set EQ Table
@@ -275,6 +277,13 @@ aud.uop.sbass.flag			:sbass function on/off
 aud.uop.sbass.bb			:Bass boost gain configuration
 aud.uop.sbass.cb			:Clear boost gain configuration
 aud.uop.sbass.q			:query sbass Table
+aud.uop.silence.flag			:silence function on/off
+aud.uop.silence.thre			:Silence Threshold configuration
+aud.uop.silence.wait			:Silence attack wait time  configuration
+aud.uop.silence.gain			:Silence attack fix gain  configuration
+aud.uop.silence.rstep			:Silence Release Step configuration
+aud.uop.silence.astep			:Silence Attack Step configuration
+aud.uop.silence.q			:query Silence configuration
 aud.uop.limiter.flag			:individual limiter flag
 aud.uop.limiter.thre			:limiter fixed mode threshold
 aud.uop.limiter.release			:limiter release rate
@@ -544,6 +553,9 @@ vdp.s.bg			:Vdp background
 vdp.s.121			:Vdp 121 scaling
 vdp.s.game			:Vdp Game Mode
 vdp.s.fix			:Vdp Fix Mode
+vdp.lbox.d_on			:LBOX.d_on
+vdp.lbox.d_off			:LBOX.d_off
+vdp.lbox.d_l			:LBOX.d_l
 prescale.d_on			:PRESCALE.d_on
 prescale.d_off			:PRESCALE.d_off
 prescale.d_l			:PRESCALE.d_l
