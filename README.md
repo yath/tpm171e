@@ -1,7 +1,7 @@
 # TPM171E
 
 This page collects some technical information for the Philips (a.k.a. TPVision)
-Android TV; specifically, for my 2018 65OLED863 series. Addresses may vary.
+Android TV; specifically, for my 2018 65OLED873 series (“TPM171E”).
 
 **NOTE: This document is work in progress!**
 
