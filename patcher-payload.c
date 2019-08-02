@@ -85,6 +85,12 @@ DEFINE_OVERRIDE(char *, a_mtktvapi_config_get_value, int16_t grp, char *cfg, int
     return ret;
 }
 
+DEFINE_OVERRIDE(int32_t, mtktvapi_config_custom_map_id_2_string, int32_t id, char *string) {
+    int32_t ret = orig_mtktvapi_config_custom_map_id_2_string(id, string);
+    log("mtktvapi_config_custom_map_id_2_string(%ld, %s) = %ld", id, string, ret);
+    return ret;
+}
+
 // Patch a GOT as described in req. The GOT is expected to be within start-end and contain the
 // value to patch at most once. (We can’t really easily tell where the GOT in the ELF segment
 // is, so we search all of it and if we found the value twice, the chances of either of them
@@ -181,6 +187,7 @@ __attribute__((constructor)) static void init() {
 
     log("Initializing");
     INIT_OVERRIDE("libmtkapp.so", a_mtktvapi_config_get_value);
+    INIT_OVERRIDE("libmtkapp.so", mtktvapi_config_custom_map_id_2_string);
     log("Initialized");
 }
 
