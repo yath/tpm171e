@@ -1,0 +1,12 @@
+[submodule "third_party/dex2jar"]
+	path = third_party/dex2jar
+	url = https://github.com/pxb1988/dex2jar
+[submodule "third_party/apktool"]
+	path = third_party/apktool
+	url = https://github.com/iBotPeaches/Apktool
+[submodule "third_party/vdexExtractor"]
+	path = third_party/vdexExtractor
+	url = https://github.com/anestisb/vdexExtractor
+[submodule "third_party/jd-cmd"]
+	path = third_party/jd-cmd
+	url = https://github.com/kwart/jd-cmd

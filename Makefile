@@ -124,3 +124,4 @@ run-cli: cli
 .PHONY: clean
 clean:
 	rm -f getroot.elf patcher-payload.so dtv_driver.lds threaddump.lds kernel.lds assets.go keyfile.txt passfile.txt $(ALL_BINARY_TARGETS)
+	$(MAKE) -C third_party clean
