@@ -5,14 +5,14 @@ set -euo pipefail
 TP="$(dirname "$(readlink -f "$0")")"/third_party
 APKTOOL="$TP"/apktool/apktool.jar
 DEX2JAR="$TP"/dex2jar/d2j-dex2jar.sh
-JD_CLI="$TP"/jd-cmd/out/jd-cli
+PROCYON="$TP"/procyon/procyon-decompiler.jar
 VDEXEX="$TP"/vdexExtractor/bin/vdexExtractor
 
 while getopts "a:d:j:v:" o; do
     case "$o" in
         a) APKTOOL="$OPTARG" ;;
         d) DEX2JAR="$OPTARG" ;;
-        j) JD_CLI="$OPTARG" ;;
+        p) PROCYON="$OPTARG" ;;
         v) VDEXEX="$OPTARG" ;;
     esac
 done
@@ -28,8 +28,8 @@ if [[ ! -e "$DEX2JAR" ]]; then
     exit 1
 fi
 
-if [[ ! -e "$JD_CLI" ]]; then
-    echo "jd-cli not found at $JD_CLI. Try make -C ${TP} or pass the path to it with -j." >&2
+if [[ ! -e "$PROCYON" ]]; then
+    echo "procyon-decompiler not found at $JD_CLI. Try make -C ${TP} or pass the path to it with -p." >&2
     exit 1
 fi
 
@@ -47,6 +47,10 @@ fi
 
 apktool() {
     java -jar "$APKTOOL" "$@"
+}
+
+procyon() {
+    java -jar "$PROCYON" "$@"
 }
 
 outdir="${apk%.apk}"
@@ -129,8 +133,8 @@ if ! "$DEX2JAR" -o "$tmpout"/classes.jar "$tmpapk"; then
     echo "Couldn't create classes.jar from .apk, skipping decompilation." >&2
 else
     # Decompile .jar.
-    if ! "$JD_CLI" "$tmpout"/classes.jar -od "$tmpout"/java; then
-        echo "Warning: JD failed, adding .partial suffix to decompilation result directory." >&2
+    if ! procyon "$tmpout"/classes.jar -o "$tmpout"/java; then
+        echo "Warning: procyon failed, adding .partial suffix to decompilation result directory." >&2
         mv -v "$tmpout"/java "$tmpout"/java.partial
     fi
 fi

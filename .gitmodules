@@ -7,6 +7,6 @@
 [submodule "third_party/vdexExtractor"]
 	path = third_party/vdexExtractor
 	url = https://github.com/anestisb/vdexExtractor
-[submodule "third_party/jd-cmd"]
-	path = third_party/jd-cmd
-	url = https://github.com/kwart/jd-cmd
+[submodule "third_party/procyon"]
+	path = third_party/procyon
+	url = https://github.com/yath/procyon-mirror.git

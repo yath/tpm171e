@@ -1,5 +1,5 @@
 .PHONY: all
-all: apktool/apktool.jar dex2jar/d2j-dex2jar.sh jd-cmd/out/jd-cli vdexExtractor/bin/vdexExtractor
+all: apktool/apktool.jar dex2jar/d2j-dex2jar.sh procyon/procyon-decompiler.jar vdexExtractor/bin/vdexExtractor
 
 # dex2jar requires gradle Gradle 4.x, which is in Debian. apktool requires >= 5.x, which
 # isn’t, so use gradlew there. We can’t use gradlew for Gradle 4.x, because it can’t parse
@@ -13,7 +13,7 @@ MVN ?= mvn # Tested with 3.6.1
 clean:
 	cd apktool && rm -f apktool.jar && $(GRADLE5) clean
 	cd dex2jar && rm -f *.sh && rm -rf out && $(GRADLE4) clean && rm -rf .gradle
-	cd jd-cmd && rm -rf out && $(MVN) clean
+	cd procyon && rm -f procyon-decompiler.jar && $(GRADLE4) clean && rm -rf .gradle
 	cd vdexExtractor && ./make.sh clean
 
 apktool/apktool.jar:
@@ -28,10 +28,10 @@ dex2jar/d2j-dex2jar.sh:
 	unzip -d out dex-tools/build/distributions/*.zip && \
 	ln -sf out/dex-tools-*/*.sh .
 
-jd-cmd/out/jd-cli:
-	cd jd-cmd && \
-	$(MVN) package && \
-	unzip -d out *-dist.zip
+procyon/procyon-decompiler.jar:
+	cd procyon && \
+	$(GRADLE4) fatJar && \
+	ln -sf build/Procyon.Decompiler/libs/procyon-decompiler-*.jar procyon-decompiler.jar
 
 vdexExtractor/bin/vdexExtractor:
 	cd vdexExtractor && ./make.sh
