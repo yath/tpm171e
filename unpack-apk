@@ -29,7 +29,7 @@ if [[ ! -e "$DEX2JAR" ]]; then
 fi
 
 if [[ ! -e "$PROCYON" ]]; then
-    echo "procyon-decompiler not found at $JD_CLI. Try make -C ${TP} or pass the path to it with -p." >&2
+    echo "procyon-decompiler not found at $PROCYON. Try make -C ${TP} or pass the path to it with -p." >&2
     exit 1
 fi
 
