@@ -71,17 +71,18 @@ tmpdir="$(mktemp -d)"
 trap "rm -rf '$tmpdir'" EXIT
 cd "$tmpdir"
 
-# .apk for apktool and dex2jar to work with.
+# Temporary .apk for apktool and dex2jar to work with, potentially updated with a classes.dex.
 tmpapk="${tmpdir}/$(basename "$apk")"
 cp -v "$apk" "$tmpapk"
 
-# Add classes.dex from .vdex, if present.
-apkdir="$(dirname "$apk")"
-vdex="$(find "$apkdir" -type f -name '*.vdex')"
-if [[ "$vdex" ]]; then
-    # If there is more than one match from find, the -f will test for "foo.vdex bar.vdex" and fail.
+# Generate classes.dex from .vdex, if necessary.
+if ! zipinfo "$tmpapk" classes.dex >/dev/null 2>&1; then
+    apkdir="$(dirname "$apk")" # look next to original .apk
+    vdex="$(find "$apkdir" -type f -name '*.vdex')"
+    # If there is not exactly one match from find, the -f will test for "foo.vdex bar.vdex" (or "")
+    # and fail.
     if [[ ! -f "$vdex" ]]; then
-        echo "Multiple *.vdex files found in $apkdir, can't continue." >&2
+        echo "Not exactly one *.vdex file found in $apkdir and APK has no classes.dex, can't continue." >&2
         exit 1
     fi
 
