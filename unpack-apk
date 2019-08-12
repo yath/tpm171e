@@ -8,7 +8,7 @@ DEX2JAR="$TP"/dex2jar/d2j-dex2jar.sh
 PROCYON="$TP"/procyon/procyon-decompiler.jar
 VDEXEX="$TP"/vdexExtractor/bin/vdexExtractor
 
-while getopts "a:d:j:v:" o; do
+while getopts "a:d:p:v:" o; do
     case "$o" in
         a) APKTOOL="$OPTARG" ;;
         d) DEX2JAR="$OPTARG" ;;
