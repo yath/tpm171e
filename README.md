@@ -75,6 +75,10 @@ running kernel module address. It relocates the bundled `getroot.elf` to the add
 of the `_CmdVersion` handler, writes it there, executes it via `b.ver` and `execve()`s
 a shell.
 
+See the `install-magisk` script to install [Magisk](https://github.com/topjohnwu/Magisk)
+for a more permanent way of acquiring root. It does not seem to affect OTA updates in
+any way, except that it needs reinstallation after an update.
+
 ## cli
 
 ### Technical details
