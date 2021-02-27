@@ -12,8 +12,8 @@ readonly SCRIPT_TMP_PATH="/data/local/tmp/magiskinstall-tmp"
 
 # Magisk Manager package name, version and URL
 readonly MAGISK_MANAGER_PACKAGE_NAME="com.topjohnwu.magisk"
-readonly MAGISK_MANAGER_MAIN_PACKAGE="${MAGISK_MANAGER_PACKAGE_NAME}/a.c"
-readonly MAGISK_MANAGER_VERSION="7.5.1"
+readonly MAGISK_MANAGER_MAIN_PACKAGE="${MAGISK_MANAGER_PACKAGE_NAME}/.core.SplashActivity"
+readonly MAGISK_MANAGER_VERSION="22.0"
 readonly MAGISK_MANAGER_APK_URL="https://github.com/topjohnwu/Magisk/releases/download/manager-v${MAGISK_MANAGER_VERSION}/MagiskManager-v${MAGISK_MANAGER_VERSION}.apk"
 
 # boot, recovery and recoveryB partitions. boot is backed up to recoveryB before patching, whose
@@ -29,8 +29,8 @@ readonly RECOVERY_B_DEV="/dev/mmcblk0p${RECOVERY_B_PARTNO}"
 readonly DOWNLOAD_DIR="/sdcard/Download" # Something accessible from the Android UI
 readonly PATCH_DIR="${DOWNLOAD_DIR}/magiskinstall.$(date +%F_%T)"
 
-# Directory where Magisk Manager places the patched output boot image.
-readonly MAGISK_PATCHED_PATH="${DOWNLOAD_DIR}/magisk_patched.img"
+# Glob pattern of patched output boot image.
+readonly MAGISK_PATCHED_PATH_GLOB="${DOWNLOAD_DIR}/magisk_patched_*.img"
 
 # Runs the passed arguments as root.
 run_as_root() {
@@ -175,6 +175,9 @@ orig_img="$PATCH_DIR/boot_orig.img"
 run_as_root dd if="$BOOT_DEV" of="$orig_img"
 run_as_root sh -c 'getprop > "$1"/getprop.txt' argv0 "$PATCH_DIR"
 
+echo "Removing old patched images..."
+adb shell rm -f "$MAGISK_PATCHED_PATH_GLOB"
+
 echo "Starting Magisk Manager..."
 adb shell am start "$MAGISK_MANAGER_MAIN_PACKAGE"
 
@@ -195,28 +198,31 @@ Magisk Manager has been started. To patch the boot image, do the following:
 EOF
 read
 
-if ! adb shell test -e "$MAGISK_PATCHED_PATH"; then
-    echo "Patched image not found at '$MAGISK_PATCHED_PATH'. Aborting." >&2
-    exit 1
-elif ! adb shell test "$MAGISK_PATCHED_PATH" -nt "$orig_img"; then
-    echo "Patched image ($MAGISK_PATCHED_PATH) is not newer than $orig_img. Aborting." >&2
+patched_img="$(adb shell ls -1 "$MAGISK_PATCHED_PATH_GLOB")"
+if [ -z "$patched_img" ] || [ "$(echo "$patched_img" | wc -l)" -ne 1 ]; then
+    echo "Not exactly one patched image found matching '$MAGISK_PATCHED_PATH_GLOB'. Got: ">&2
+    echo "$patched_img"|sed -e 's/^/  /'
+fi
+
+if ! adb shell test "$patched_img" -nt "$orig_img"; then
+    echo "Patched image ($patched_img) is not newer than $orig_img. Aborting." >&2
     exit 1
 fi
 
-if adb shell cmp "$MAGISK_PATCHED_PATH" "$orig_img"; then
-    echo "Patched image $MAGISK_PATCHED_PATH equal to original image $orig_img. Aborting." >&2
+if adb shell cmp "$patched_img" "$orig_img"; then
+    echo "Patched image $patched_img equal to original image $orig_img. Aborting." >&2
     exit 1
 fi
 
-if ! is_android_bootimg "$MAGISK_PATCHED_PATH"; then
-    echo "Patched image $MAGISK_PATCHED_PATH does not look like an Android boot image. Aborting." >&2
+if ! is_android_bootimg "$patched_img"; then
+    echo "Patched image $patched_img does not look like an Android boot image. Aborting." >&2
     exit 1
 fi
 
 
+echo "Patched image $patched_img looks sane, moving to $PATCH_DIR"
+adb shell mv "$patched_img" "$PATCH_DIR/boot_patched.img"
 patched_img="$PATCH_DIR/boot_patched.img"
-echo "Patched image $MAGISK_PATCHED_PATH looks sane, moving to $patched_img"
-adb shell mv "$MAGISK_PATCHED_PATH" "$patched_img"
 
 if run_as_root cmp "$RECOVERY_DEV" "$RECOVERY_B_DEV" || \
     ask_yesno "Partitions 'recovery' and 'recoveryB' differ (after ~20MB seems normal). Do you still want to back up 'boot' to 'recoveryB'?"; then
