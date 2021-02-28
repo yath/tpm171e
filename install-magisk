@@ -10,11 +10,9 @@ readonly LOADER_PATH="/data/local/tmp/loader"
 readonly LOADER_BUILD_DIR="$(dirname "$(readlink -f "$0")")" # script directory
 readonly SCRIPT_TMP_PATH="/data/local/tmp/magiskinstall-tmp"
 
-# Magisk Manager package name, version and URL
-readonly MAGISK_MANAGER_PACKAGE_NAME="com.topjohnwu.magisk"
-readonly MAGISK_MANAGER_MAIN_PACKAGE="${MAGISK_MANAGER_PACKAGE_NAME}/a.c"
-readonly MAGISK_MANAGER_VERSION="7.5.1"
-readonly MAGISK_MANAGER_APK_URL="https://github.com/topjohnwu/Magisk/releases/download/manager-v${MAGISK_MANAGER_VERSION}/MagiskManager-v${MAGISK_MANAGER_VERSION}.apk"
+# Magisk version and URL
+readonly MAGISK_VERSION="20.3"
+readonly MAGISK_ZIP_URL="https://github.com/topjohnwu/Magisk/releases/download/v${MAGISK_VERSION}/Magisk-v${MAGISK_VERSION}.zip"
 
 # boot, recovery and recoveryB partitions. boot is backed up to recoveryB before patching, whose
 # content should match recovery.
@@ -25,24 +23,39 @@ readonly RECOVERY_DEV="/dev/mmcblk0p${RECOVERY_PARTNO}"
 readonly RECOVERY_B_PARTNO="8"
 readonly RECOVERY_B_DEV="/dev/mmcblk0p${RECOVERY_B_PARTNO}"
 
-# Directory to place boot image in for patching from Magisk Manager.
-readonly DOWNLOAD_DIR="/sdcard/Download" # Something accessible from the Android UI
-readonly PATCH_DIR="${DOWNLOAD_DIR}/magiskinstall.$(date +%F_%T)"
+# Directory to place old and patched boot image in.
+readonly PATCH_DIR="/sdcard/magiskinstall.$(date +%F_%T)"
 
-# Directory where Magisk Manager places the patched output boot image.
-readonly MAGISK_PATCHED_PATH="${DOWNLOAD_DIR}/magisk_patched.img"
+# Temporary directory for Magisk installer, must be executable.
+readonly INSTALLER_DIR="/data/local/tmp/magiskinstall.tmp"
 
-# Runs the passed arguments as root.
-run_as_root() {
-    # Getting something escaped properly through adb shell, the loader's argv parsing, and then
-    # the android shell is tricky, so generate a shell script and execute it on the device.
+# Magisk installer script and output filename.
+readonly INSTALLER_SCRIPT="$INSTALLER_DIR/boot_patch.sh"
+readonly MAGISK_PATCHED_PATH="$INSTALLER_DIR/new-boot.img"
+
+# Pushes a temporary shell script with the passed arguments (first being PS4)
+# to $SCRIPT_TMP_PATH, because getting something escaped properly through adb
+# shell, (the loader’s argv parsing), and then the android shell is tricky.
+push_tmp_script() {
+    local ps4="$1"; shift
     local tmp="$(mktemp)"
-    printf '#!/system/bin/sh\nPS4="(run_as_root) + "\nset -x\n' > "$tmp"
+    printf '#!/system/bin/sh\nPS4="('"$ps4"') + "\nset -x\n' > "$tmp"
     printf '%q ' "$@" >> "$tmp" # Need to print "%q " individually; the entire format is repeated per arg
     printf '\n' >> "$tmp"
     chmod +x "$tmp"
     adb push "$tmp" "$SCRIPT_TMP_PATH" > /dev/null
     rm -f "$tmp"
+}
+
+# Runs the passed arguments as user.
+run_as_user() {
+    push_tmp_script "user" "$@"
+    adb shell "$SCRIPT_TMP_PATH"
+}
+
+# Runs the passed arguments as root.
+run_as_root() {
+    push_tmp_script "root" "$@"
     adb shell "$LOADER_PATH -trigger_exec $SCRIPT_TMP_PATH"
 }
 
@@ -101,50 +114,16 @@ ask_yesno() {
     done
 }
 
-# Returns the versionName of an installed package.
-get_package_version() {
-    local pkg="$1"
-    adb shell pm dump "$pkg" | \
-        sed -r -n -e 's/^[[:blank:]]*versionName=([^[:blank:]]+)/\1/;T;p'
-}
-
 # Checks whether a given partition is an Android boot image.
 is_android_bootimg() {
     local part="$1"
     test "$(run_as_root dd if="$part" bs=8 count=1)" = 'ANDROID!'
 }
 
-# (Re-)installs Magisk Manager.
-install_magisk_manager(){
-    local tmp="$(mktemp)"
-    curl "${CURL_ARGS[@]}" "$MAGISK_MANAGER_APK_URL" > "$tmp"
-    if ! adb install -r "$tmp"; then
-        if ! ask_yesno "Installation of Magisk Manager failed. Continue?"; then
-            exit 1
-        fi
-    fi
-    rm -f "$tmp"
-}
-
-
 ### Main script starts here ###
 
 echo "Preparing root environment..."
 prepare_root
-
-echo "Checking Magisk Manager version..."
-mm_version="$(get_package_version "$MAGISK_MANAGER_PACKAGE_NAME")"
-if [ -z "$mm_version" ]; then
-    echo "Magisk Manager does not seem to be installed. Installing..."
-    install_magisk_manager
-elif [ "$mm_version" != "$MAGISK_MANAGER_VERSION" ]; then
-    echo "Your Magisk Manager version '$mm_version' does not match expected '$MAGISK_MANAGER_VERSION'."
-    if ask_yesno "Reinstall?"; then
-        install_magisk_manager
-    fi
-else
-    echo "Installed Magisk Manager version $mm_version matches expected version."
-fi
 
 echo "Sanity-checking partitions..."
 declare -rA want_partnames=(["$BOOT_PARTNO"]="boot"
@@ -171,29 +150,26 @@ done
 echo "Creating patch directory $PATCH_DIR..."
 adb shell mkdir "$PATCH_DIR"
 
+echo "(Re-)creating installer directory $INSTALLER_DIR..."
+adb shell rm -rf "$INSTALLER_DIR"
+adb shell mkdir -p "$INSTALLER_DIR"
+
+echo "Downloading Magisk installer locally..."
+tmp="$(mktemp -d)"
+trap "rm -rf '$tmp'" EXIT
+curl "${CURL_ARGS[@]}" "$MAGISK_ZIP_URL" > "$tmp/Magisk.zip"
+unzip -d "$tmp/m" "$tmp/Magisk.zip"
+
+echo "Copying Magisk installer to device..."
+adb push "$tmp/m/arm"/* "$INSTALLER_DIR"
+adb push "$tmp/m/common"/* "$INSTALLER_DIR"
+adb shell chmod +x "$INSTALLER_DIR/"'*'
+
+echo "Patching image..."
 orig_img="$PATCH_DIR/boot_orig.img"
 run_as_root dd if="$BOOT_DEV" of="$orig_img"
 run_as_root sh -c 'getprop > "$1"/getprop.txt' argv0 "$PATCH_DIR"
-
-echo "Starting Magisk Manager..."
-adb shell am start "$MAGISK_MANAGER_MAIN_PACKAGE"
-
-cat <<EOF
-
-Magisk Manager has been started. To patch the boot image, do the following:
-
-* Click on 'Install' in the 'Magisk is not installed' line. You will need to click 'Install'
-  with a mouse; just selecting and 'clicking' the line with the TV remote WILL NOT WORK.
-
-* Select 'Install', then 'Select and Patch a File'.
-
-* Select $orig_img
-
-* Wait until Magisk has finished patching.
-
-* Press [Enter] here. You can close Magisk Manager on the TV.
-EOF
-read
+run_as_user sh -c '"$1" "$2"' argv0 "$INSTALLER_SCRIPT" "$orig_img"
 
 if ! adb shell test -e "$MAGISK_PATCHED_PATH"; then
     echo "Patched image not found at '$MAGISK_PATCHED_PATH'. Aborting." >&2
