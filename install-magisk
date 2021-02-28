@@ -11,8 +11,8 @@ readonly LOADER_BUILD_DIR="$(dirname "$(readlink -f "$0")")" # script directory
 readonly SCRIPT_TMP_PATH="/data/local/tmp/magiskinstall-tmp"
 
 # Magisk version and URL. URL may be overriden from $1.
-readonly MAGISK_VERSION="21.4"
-readonly MAGISK_URL="${1:-https://github.com/topjohnwu/Magisk/releases/download/v${MAGISK_VERSION}/Magisk-v${MAGISK_VERSION}.zip}"
+readonly MAGISK_VERSION="22.0"
+readonly MAGISK_URL="${1:-https://github.com/topjohnwu/Magisk/releases/download/v${MAGISK_VERSION}/Magisk-v${MAGISK_VERSION}.apk}"
 
 # boot, recovery and recoveryB partitions. boot is backed up to recoveryB before patching, whose
 # content should match recovery.
@@ -163,6 +163,9 @@ else
     curl "${CURL_ARGS[@]}" "$MAGISK_URL" > "$tmp/Magisk.zip"
 fi
 unzip -d "$tmp/m" "$tmp/Magisk.zip"
+
+echo "Patching boot_patch.sh..." # https://github.com/topjohnwu/Magisk/issues/3961
+find "$tmp/m" -name boot_patch.sh -exec sed -i.orig -re 's,/system/lib64,/system/XXXXXlib64XXXXX,g' {} \;
 
 echo "Copying Magisk installer to device..."
 if echo "$MAGISK_URL" | grep -q 'apk$'; then
