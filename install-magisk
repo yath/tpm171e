@@ -10,9 +10,9 @@ readonly LOADER_PATH="/data/local/tmp/loader"
 readonly LOADER_BUILD_DIR="$(dirname "$(readlink -f "$0")")" # script directory
 readonly SCRIPT_TMP_PATH="/data/local/tmp/magiskinstall-tmp"
 
-# Magisk version and URL
+# Magisk version and URL. URL may be overriden from $1.
 readonly MAGISK_VERSION="21.4"
-readonly MAGISK_ZIP_URL="https://github.com/topjohnwu/Magisk/releases/download/v${MAGISK_VERSION}/Magisk-v${MAGISK_VERSION}.zip"
+readonly MAGISK_URL="${1:-https://github.com/topjohnwu/Magisk/releases/download/v${MAGISK_VERSION}/Magisk-v${MAGISK_VERSION}.zip}"
 
 # boot, recovery and recoveryB partitions. boot is backed up to recoveryB before patching, whose
 # content should match recovery.
@@ -157,12 +157,24 @@ adb shell mkdir -p "$INSTALLER_DIR"
 echo "Downloading Magisk installer locally..."
 tmp="$(mktemp -d)"
 trap "rm -rf '$tmp'" EXIT
-curl "${CURL_ARGS[@]}" "$MAGISK_ZIP_URL" > "$tmp/Magisk.zip"
+if [ -f "$MAGISK_URL" ]; then
+    cp "$MAGISK_URL" "$tmp/Magisk.zip"
+else
+    curl "${CURL_ARGS[@]}" "$MAGISK_URL" > "$tmp/Magisk.zip"
+fi
 unzip -d "$tmp/m" "$tmp/Magisk.zip"
 
 echo "Copying Magisk installer to device..."
-adb push "$tmp/m/arm"/* "$INSTALLER_DIR"
-adb push "$tmp/m/common"/* "$INSTALLER_DIR"
+if echo "$MAGISK_URL" | grep -q 'apk$'; then
+    adb push "$tmp/m/assets"/*.sh "$INSTALLER_DIR"
+    for i in "$tmp/m/lib/armeabi-v7a"/*.so; do
+        n="$(printf "%s" "$i" | sed -re 's/.*lib(.*)\.so/\1/')" # .../libfoo.so -> foo
+        adb push "$i" "$INSTALLER_DIR/$n"
+    done
+else
+    adb push "$tmp/m/common"/* "$INSTALLER_DIR"
+    adb push "$tmp/m/arm"/* "$INSTALLER_DIR"
+fi
 adb shell chmod +x "$INSTALLER_DIR/"'*'
 
 echo "Patching image..."
