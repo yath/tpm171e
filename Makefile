@@ -17,6 +17,9 @@ TARGET_CFLAGS = $(CFLAGS) -mcpu=cortex-a17 -mfpu=neon
 
 CROSS := arm-none-eabi-
 
+# https://launchpad.net/linaro-toolchain-binaries/trunk/2013.10/+download/gcc-linaro-arm-linux-gnueabihf-4.8-2013.10_linux.tar.xz
+LINUX_CROSS := $$PWD/third_party/gcc-linaro-arm-linux-gnueabihf-4.8-2013.10_linux/bin/arm-linux-gnueabihf-
+
 INSTALL_DIR := /data/local/tmp
 INSTALL_TARGETS := loader patcher patcher-payload.so cli decrap
 
@@ -53,6 +56,14 @@ kernelutil: kernelutil.go
 
 decrypt: decrypt.c
 	$(CC) $(CFLAGS) -o $@ $< -lcrypto
+
+## kernel modules
+third_party/linux.stamp:
+	+$(MAKE) -C third_party LINUX_CROSS=$(LINUX_CROSS) linux.stamp
+
+.PHONY: *.ko
+*.ko: third_party/linux.stamp
+	$(MAKE) -C third_party/linux ARCH=arm CROSS_COMPILE=$(LINUX_CROSS) M=$$PWD $@
 
 ## debugging stuff
 

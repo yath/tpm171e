@@ -10,3 +10,6 @@
 [submodule "third_party/procyon"]
 	path = third_party/procyon
 	url = https://github.com/yath/procyon-mirror.git
+[submodule "third_party/linux"]
+	path = third_party/linux
+	url = https://github.com/yath/mediatek-linux-3.10

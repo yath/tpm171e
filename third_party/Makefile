@@ -15,6 +15,7 @@ clean:
 	cd dex2jar && rm -f *.sh && rm -rf out && $(GRADLE4) clean && rm -rf .gradle
 	cd procyon && rm -f procyon-decompiler.jar && $(GRADLE4) clean && rm -rf .gradle
 	cd vdexExtractor && ./make.sh clean
+	rm -f linux.stamp && cd linux && make distclean
 
 apktool/apktool.jar:
 	cd apktool && \
@@ -35,3 +36,12 @@ procyon/procyon-decompiler.jar:
 
 vdexExtractor/bin/vdexExtractor:
 	cd vdexExtractor && ./make.sh
+
+linux.stamp:
+ifndef LINUX_CROSS
+	$(error set LINUX_CROSS to cross compiler prefix)
+endif
+	sed -i -e 's/^ *YYLTYPE yylloc;/extern &/' linux/scripts/dtc/dtc-lexer.*
+	cp config-linux-3.10.79 linux/.config
+	+cd linux && $(MAKE) ARCH=arm CROSS_COMPILE=$(LINUX_CROSS) oldconfig modules
+	touch linux.stamp
