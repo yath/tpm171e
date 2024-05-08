@@ -1,8 +1,8 @@
 apply plugin: 'com.android.application'
 
 android {
+    //noinspection GrDeprecatedAPIUsage
     compileSdkVersion 29
-    buildToolsVersion "29.0.2"
 
     aaptOptions {
         additionalParameters '-v'
@@ -12,8 +12,9 @@ android {
     defaultConfig {
         applicationId "de.yath.tvtool"
         minSdkVersion 15
+        //noinspection ExpiredTargetSdkVersion
         targetSdkVersion 29
-        versionCode 1
+        versionCode 3
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -25,6 +26,7 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+    namespace 'de.yath.tvtool'
 
 }
 
