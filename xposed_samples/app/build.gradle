@@ -4,10 +4,6 @@ android {
     //noinspection GrDeprecatedAPIUsage
     compileSdkVersion 29
 
-    aaptOptions {
-        additionalParameters '-v'
-    }
-
 
     defaultConfig {
         applicationId "de.yath.tvtool"
@@ -27,6 +23,9 @@ android {
         }
     }
     namespace 'de.yath.tvtool'
+    androidResources {
+        additionalParameters '-v'
+    }
 
 }
 
