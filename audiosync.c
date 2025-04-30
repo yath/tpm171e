@@ -78,7 +78,7 @@ int my_MTAUD_SetChannelVolume(int decoder, int channel, int value) {
     DEBUG("my_MTAUD_SetChannelVolume(%d, %d, %d)", decoder, channel, value);
 
     if (channel == 5) {
-      DEBUG("Als setting channels 8 and 9 to volume %d", value);
+      DEBUG("Also setting channels 8 and 9 to volume %d", value);
       orig_MTAUD_SetChannelVolume(0, 10 /* maps to 8 */, value);
       orig_MTAUD_SetChannelVolume(0, 11 /* maps to 9 */, value);
     }
