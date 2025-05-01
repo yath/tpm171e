@@ -61,8 +61,11 @@ decrypt: decrypt.c
 third_party/linux.stamp:
 	+$(MAKE) -C third_party LINUX_CROSS=$(LINUX_CROSS) linux.stamp
 
-.PHONY: *.ko
-*.ko: third_party/linux.stamp
+include Kbuild
+KOBJS := $(patsubst %.o,%.ko,$(obj-m))
+
+.PHONY: $(KOBJS)
+$(KOBJS): third_party/linux.stamp
 	$(MAKE) -C third_party/linux ARCH=arm CROSS_COMPILE=$(LINUX_CROSS) M=$$PWD $@
 
 ## debugging stuff
