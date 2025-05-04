@@ -3,6 +3,25 @@
 #include <linux/slab.h>
 #include <linux/kallsyms.h>
 
+#define SPDIF // control SPDIF output
+
+/* Channel map:
+   0071d1a4 [0]              1,   2,   3,   4,
+   0071d1a8 [4]              5,   6,   7,  10,
+   0071d1ac [8]             11,   8,   9,  12,
+   0071d1b0 [12]            13,  14,  15,  16,
+   0071d1b4 [16]            17,   0,   0,  20,
+   0071d1b8 [20]            21,   1
+*/
+
+#ifdef SPDIF
+#define LEFT_CHANNEL 6
+#define RIGHT_CHANNEL 7
+#else
+#define LEFT_CHANNEL 10
+#define RIGHT_CHANNEL 11
+#endif
+
 #define DEBUG(fmt, args...) printk(KERN_INFO KBUILD_MODNAME ": "fmt"\n", ##args)
 
 #define ASSERT(condition) do { \
@@ -78,9 +97,10 @@ int my_MTAUD_SetChannelVolume(int decoder, int channel, int value) {
     DEBUG("my_MTAUD_SetChannelVolume(%d, %d, %d)", decoder, channel, value);
 
     if (channel == 5) {
-      DEBUG("Also setting channels 8 and 9 to volume %d", value);
-      orig_MTAUD_SetChannelVolume(0, 10 /* maps to 8 */, value);
-      orig_MTAUD_SetChannelVolume(0, 11 /* maps to 9 */, value);
+      DEBUG("Also setting channels %d and %d to volume %d", LEFT_CHANNEL,
+            RIGHT_CHANNEL, value);
+      orig_MTAUD_SetChannelVolume(0, LEFT_CHANNEL, value);
+      orig_MTAUD_SetChannelVolume(0, RIGHT_CHANNEL, value);
     }
 
     return orig_MTAUD_SetChannelVolume(decoder, channel, value);
