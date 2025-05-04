@@ -93,14 +93,22 @@ static int restore_fun(word **orig_fun) {
 
 int (*orig_MTAUD_SetChannelVolume)(int, int, int) = NULL;
 
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+
 int my_MTAUD_SetChannelVolume(int decoder, int channel, int value) {
     DEBUG("my_MTAUD_SetChannelVolume(%d, %d, %d)", decoder, channel, value);
 
     if (channel == 5) {
+#ifdef SPDIF
+    // Map 0-60 to 0-50.
+    int volume = (MIN(value, 60) * 5) / 6;
+#else
+    int volume = value;
+#endif
       DEBUG("Also setting channels %d and %d to volume %d", LEFT_CHANNEL,
-            RIGHT_CHANNEL, value);
-      orig_MTAUD_SetChannelVolume(0, LEFT_CHANNEL, value);
-      orig_MTAUD_SetChannelVolume(0, RIGHT_CHANNEL, value);
+            RIGHT_CHANNEL, volume);
+      orig_MTAUD_SetChannelVolume(0, LEFT_CHANNEL, volume);
+      orig_MTAUD_SetChannelVolume(0, RIGHT_CHANNEL, volume);
     }
 
     return orig_MTAUD_SetChannelVolume(decoder, channel, value);
