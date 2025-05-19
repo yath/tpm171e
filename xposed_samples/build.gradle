@@ -17,7 +17,9 @@ buildscript {
 allprojects {
     repositories {
         google()
-        mavenCentral()
+        maven {
+            url = 'https://repo.grails.org/grails/core/'
+        }
     }
 }
 
