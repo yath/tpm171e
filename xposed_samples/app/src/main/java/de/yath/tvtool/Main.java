@@ -20,6 +20,7 @@ public class Main implements IXposedHookLoadPackage, IXposedHookZygoteInit, IXpo
     private static final IXposedHookLoadPackage loadPackageHooks[] = new IXposedHookLoadPackage[]{
             new RCFirmwareUpdateSilencer(),
             new MultiViewEnabler(),
+            new GlobalKeyOverrider(),
             lp,
     };
 
