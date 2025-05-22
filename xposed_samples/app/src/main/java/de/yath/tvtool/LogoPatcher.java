@@ -26,7 +26,6 @@ public class LogoPatcher implements IXposedHookZygoteInit, IXposedHookInitPackag
     @Override
     public void initZygote(StartupParam startupParam) throws Throwable {
         MODULE_PATH = startupParam.modulePath;
-        Log.d(TAG, "Will load replacement logo from "+MODULE_PATH);
     }
 
     @Override
@@ -34,7 +33,7 @@ public class LogoPatcher implements IXposedHookZygoteInit, IXposedHookInitPackag
         if (!resparam.packageName.equals(RES_PKG))
             return;
 
-        Log.i(TAG, "Replacing startup_philips_logo in "+resparam.packageName+" with ours.");
+        Log.i(TAG, "Replacing startup_philips_logo in "+resparam.packageName+" with ours from "+MODULE_PATH);
         XModuleResources modRes = XModuleResources.createInstance(MODULE_PATH, resparam.res);
         resparam.res.setReplacement(RES_ORIG, modRes.fwd(R.drawable.startup_philips_logo_yath));
     }
